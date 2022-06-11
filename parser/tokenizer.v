@@ -291,8 +291,6 @@ fn (mut t Tokenizer) data_state() []Token {
 		t.return_state = .data
 		t.state = .character_reference
 		tokens := t.emit_token()
-		t.state = t.return_state
-		t.return_state = .@none
 		return tokens
 	}
 
@@ -321,8 +319,6 @@ fn (mut t Tokenizer) rcdata_state() []Token {
 		t.return_state = .rcdata
 		t.state = .character_reference
 		tokens := t.emit_token()
-		t.state = t.return_state
-		t.return_state = .@none
 		return tokens
 	}
 
