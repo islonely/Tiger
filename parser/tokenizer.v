@@ -128,7 +128,7 @@ fn (mut t Tokenizer) reconsume() { t.pos-- }
 // cursor forward once.
 fn (mut t Tokenizer) consume() ? {
 	if t.pos >= t.source.len {
-		return error('End of file.')
+		return none
 	}
 
 	t.char = t.source[t.pos]
@@ -137,11 +137,11 @@ fn (mut t Tokenizer) consume() ? {
 
 // peek returns the next value in buffer without moving the cursor.
 fn (mut t Tokenizer) peek() ?rune {
-	if t.pos >= t.source.len {
-		return error('End of file.')
+	return if t.pos >= t.source.len {
+		none
+	} else {
+		t.source[t.pos]
 	}
-
-	return t.source[t.pos]
 }
 
 // look_ahead returns the next value in buffer without moving the
