@@ -8,7 +8,7 @@ type ElementStack = []&Element
 // said value from the stack or returns none if the stack is empty.
 fn (mut stack ElementStack) pop() ?&Element {
 	if stack.len > 0 {
-		ret := stack[stack.len-1]
+		ret := stack.first()
 		stack.delete(stack.len-1)
 		return ret
 	} else {
@@ -20,7 +20,7 @@ fn (mut stack ElementStack) pop() ?&Element {
 // or returns none if the stack is empty.
 fn (mut stack ElementStack) peek() ?&Element {
 	return if stack.len > 0 {
-		stack[stack.len-1]
+		stack.first()
 	} else {
 		none
 	}
