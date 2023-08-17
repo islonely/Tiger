@@ -1,0 +1,4 @@
+module dom
+
+struct EventTarget {
+}

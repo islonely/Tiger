@@ -29,7 +29,7 @@ mut:
 	token Token = EOFToken{}
 	attr Attribute
 	buffer strings.Builder = new_builder(50)
-	open_tags Stack<string>
+	open_tags Stack[string]
 	char_ref_code rune
 	token_buffer []Token
 }
