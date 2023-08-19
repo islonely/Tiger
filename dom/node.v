@@ -1,5 +1,12 @@
 module dom
 
+// CommentNode
+pub struct CommentNode {
+	Node
+pub mut:
+	text string
+}
+
 enum NodeType {
 	element = 1
 	attributetext
@@ -29,27 +36,57 @@ struct GetRootNodeOptions {
 }
 
 // https://dom.spec.whatwg.org/#node
-struct Node {
-	EventTarget
+[heap]
+pub interface NodeInterface {
 mut:
 	node_type      NodeType
 	node_name      string
 	base_uri       string
 	is_connected   bool
 	owner_document ?&Document
-	parent_node    ?&Node
+	parent_node    ?&NodeInterface
 	parent_element ?&Element
-	child_nodes    []&Node
-	first_child    ?&Node
-	last_child     ?&Node
-	prev_sibling   ?&Node
-	next_sibling   ?&Node
+	child_nodes    []&NodeInterface
+	first_child    ?&NodeInterface
+	last_child     ?&NodeInterface
+	prev_sibling   ?&NodeInterface
+	next_sibling   ?&NodeInterface
+	node_value     ?string
+	text_content   ?string
+}
+
+[heap]
+pub struct Node {
+	// EventTarget
+pub mut:
+	node_type      NodeType
+	node_name      string
+	base_uri       string
+	is_connected   bool
+	owner_document ?&Document
+	parent_node    ?&NodeInterface
+	parent_element ?&Element
+	child_nodes    []&NodeInterface
+	first_child    ?&NodeInterface
+	last_child     ?&NodeInterface
+	prev_sibling   ?&NodeInterface
+	next_sibling   ?&NodeInterface
 	node_value     ?string
 	text_content   ?string
 }
 
 // has_child_nodes returns whether or not the Node has children nodes.
 [inline]
-fn (n Node) has_child_nodes() bool {
+pub fn (n NodeInterface) has_child_nodes() bool {
 	return n.child_nodes.len > 0
+}
+
+// this is supposed to return a Node?
+pub fn (mut n NodeInterface) append_child(child &NodeInterface) {
+	if !n.has_child_nodes() {
+		unsafe {
+			n.first_child = child
+		}
+	}
+	n.child_nodes << child
 }

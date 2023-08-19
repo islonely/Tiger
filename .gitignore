@@ -7,3 +7,7 @@ cyberian_tiger
 *.dylib
 *.dll
 vls.log
+
+.idea/
+.ilk
+.pdb

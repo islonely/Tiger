@@ -5,7 +5,7 @@ import strings { new_builder }
 
 const (
 	null = rune(0)
-	replacement_token = CharacterToken{0xfffd}
+	replacement_token = CharacterToken(0xfffd)
 )
 
 const (
@@ -331,7 +331,7 @@ fn (mut t Tokenizer) data_state() []Token {
 		println('Unexpected Null Character')
 	}
 
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // rcdata_state follows the spec 13.2.5.2 at https://html.spec.whatwg.org/multipage/parsing.html#rcdata-state
@@ -358,7 +358,7 @@ fn (mut t Tokenizer) rcdata_state() []Token {
 		return [replacement_token]
 	}
 
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // rawtext_state follows the spec 13.2.5.3 at https://html.spec.whatwg.org/multipage/parsing.html#rawtext-state
@@ -379,7 +379,7 @@ fn (mut t Tokenizer) rawtext_state() []Token {
 		return [replacement_token]
 	}
 
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // script_data_state follows the spec 13.2.5.4 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-state
@@ -400,7 +400,7 @@ fn (mut t Tokenizer) script_data_state() []Token {
 		return [replacement_token]
 	}
 
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // plaintext_state follows the spec 13.2.5.5 at https://html.spec.whatwg.org/multipage/parsing.html#plaintext-state
@@ -416,7 +416,7 @@ fn (mut t Tokenizer) plaintext_state() []Token {
 		return [replacement_token]
 	}
 
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // tag_open_state follows the spec 13.2.5.6 at https://html.spec.whatwg.org/multipage/parsing.html#tag-open-state
@@ -426,7 +426,7 @@ fn (mut t Tokenizer) tag_open_state() []Token {
 		println('EOF before tag name.')
 		t.state = .eof
 		return [
-			CharacterToken{`<`},
+			CharacterToken(`<`),
 			EOFToken{
 				name: name__eof_before_tag_name
 				mssg: mssg__eof_before_tag_name
@@ -464,7 +464,7 @@ fn (mut t Tokenizer) tag_open_state() []Token {
 	println('Invalid first character of tag name.')
 	t.reconsume()
 	t.state = .data
-	return [CharacterToken{`<`}]
+	return [CharacterToken(`<`)]
 }
 
 // end_tag_open_state follows the spec 13.2.5.7 at https://html.spec.whatwg.org/multipage/parsing.html#end-tag-open-state
@@ -474,8 +474,8 @@ fn (mut t Tokenizer) end_tag_open_state() []Token {
 		println('EOF before tag name.')
 		t.state = .eof
 		return [
-			CharacterToken{`<`},
-			CharacterToken{`/`},
+			CharacterToken(`<`),
+			CharacterToken(`/`),
 			EOFToken{
 				name: name__eof_before_tag_name
 				mssg: mssg__eof_before_tag_name
@@ -552,7 +552,7 @@ fn (mut t Tokenizer) rcdata_less_than_sign_state() []Token {
 	anything_else := fn [mut t] () []Token {
 		t.reconsume()
 		t.state = .rcdata
-		return [CharacterToken{`<`}]
+		return [CharacterToken(`<`)]
 	}
 
 	t.consume() or {
@@ -645,7 +645,7 @@ fn (mut t Tokenizer) rawtext_less_than_sign_state() []Token {
 	anything_else := fn [mut t] () []Token {
 		t.reconsume()
 		t.state = .rawtext
-		return [CharacterToken{`<`}]
+		return [CharacterToken(`<`)]
 	}
 
 	t.consume() or {
@@ -737,7 +737,7 @@ fn (mut t Tokenizer) script_data_less_than_sign_state() []Token {
 	anything_else := fn [mut t] () []Token {
 		t.reconsume()
 		t.state = .script_data
-		return [CharacterToken{`<`}]
+		return [CharacterToken(`<`)]
 	}
 
 	t.consume() or {
@@ -842,7 +842,7 @@ fn (mut t Tokenizer) script_data_escape_start_state() []Token {
 
 	if t.char == `-` {
 		t.state = .script_data_escape_start_dash
-		return [CharacterToken{`-`}]
+		return [CharacterToken(`-`)]
 	}
 
 	return anything_else()
@@ -862,7 +862,7 @@ fn (mut t Tokenizer) script_data_escape_start_dash_state() []Token {
 
 	if t.char == `-` {
 		t.state = .script_data_escaped_dash_dash
-		return [CharacterToken{`-`}]
+		return [CharacterToken(`-`)]
 	}
 
 	return anything_else()
@@ -882,7 +882,7 @@ fn (mut t Tokenizer) script_data_escaped_state() []Token {
 
 	if t.char == `-` {
 		t.state = .script_data_escaped_dash
-		return [CharacterToken{`-`}]
+		return [CharacterToken(`-`)]
 	}
 
 	if t.char == `<` {
@@ -896,7 +896,7 @@ fn (mut t Tokenizer) script_data_escaped_state() []Token {
 		return [replacement_token]
 	}
 
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // script_data_escaped_dash_state follows the spec 13.2.5.21 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-escaped-dash-state
@@ -913,7 +913,7 @@ fn (mut t Tokenizer) script_data_escaped_dash_state() []Token {
 
 	if t.char == `-` {
 		t.state = .script_data_escaped_dash_dash
-		return [CharacterToken{`-`}]
+		return [CharacterToken(`-`)]
 	}
 
 	if t.char == `<` {
@@ -928,7 +928,7 @@ fn (mut t Tokenizer) script_data_escaped_dash_state() []Token {
 	}
 
 	t.state = .script_data_escaped
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // script_data_escaped_dash_dash_state follows the spec 13.2.5.22 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-escaped-dash-dash-state
@@ -944,7 +944,7 @@ fn (mut t Tokenizer) script_data_escaped_dash_dash_state() []Token {
 	}
 
 	if t.char == `-` {
-		return [CharacterToken{`-`}]
+		return [CharacterToken(`-`)]
 	}
 
 	if t.char == `<` {
@@ -954,7 +954,7 @@ fn (mut t Tokenizer) script_data_escaped_dash_dash_state() []Token {
 
 	if t.char == `>` {
 		t.state = .script_data
-		return [CharacterToken{`>`}]
+		return [CharacterToken(`>`)]
 	}
 
 	if t.char == null {
@@ -964,7 +964,7 @@ fn (mut t Tokenizer) script_data_escaped_dash_dash_state() []Token {
 	}
 
 	t.state = .script_data_escaped
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // script_data_escaped_less_than_sign_state follows the spec 13.2.5.23 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-escaped-less-than-sign-state
@@ -972,7 +972,7 @@ fn (mut t Tokenizer) script_data_escaped_less_than_sign_state() []Token {
 	anything_else := fn [mut t] () []Token {
 		t.reconsume()
 		t.state = .script_data_escaped
-		return [CharacterToken{`<`}]
+		return [CharacterToken(`<`)]
 	}
 
 	t.consume() or {
@@ -989,7 +989,7 @@ fn (mut t Tokenizer) script_data_escaped_less_than_sign_state() []Token {
 		t.buffer = new_builder(50)
 		t.reconsume()
 		t.state = .script_data_double_escape_start
-		return [CharacterToken{`<`}]
+		return [CharacterToken(`<`)]
 	}
 
 	return anything_else()
@@ -1084,7 +1084,7 @@ fn (mut t Tokenizer) script_data_double_escape_start_state() []Token {
 			return t.script_data_double_escaped_state()
 		} else {
 			t.state = .script_data_escaped
-			return [CharacterToken{t.char}]
+			return [CharacterToken(t.char)]
 		}
 	}
 
@@ -1110,12 +1110,12 @@ fn (mut t Tokenizer) script_data_double_escaped_state() []Token {
 
 	if t.char == `-` {
 		t.state = .script_data_double_escaped_dash
-		return [CharacterToken{`-`}]
+		return [CharacterToken(`-`)]
 	}
 
 	if t.char == `<` {
 		t.state = .script_data_double_escaped_less_than_sign
-		return [CharacterToken{`<`}]
+		return [CharacterToken(`<`)]
 	}
 
 	if t.char == null {
@@ -1124,7 +1124,7 @@ fn (mut t Tokenizer) script_data_double_escaped_state() []Token {
 		return [replacement_token]
 	}
 
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // script_data_double_escaped_dash_state follows the spec 13.2.5.28 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-double-escaped-dash-state
@@ -1141,12 +1141,12 @@ fn (mut t Tokenizer) script_data_double_escaped_dash_state() []Token {
 
 	if t.char == `-` {
 		t.state = .script_data_double_escaped_dash_dash
-		return [CharacterToken{`-`}]
+		return [CharacterToken(`-`)]
 	}
 
 	if t.char == `<` {
 		t.state = .script_data_double_escaped_less_than_sign
-		return [CharacterToken{`<`}]
+		return [CharacterToken(`<`)]
 	}
 
 	if t.char == null {
@@ -1157,7 +1157,7 @@ fn (mut t Tokenizer) script_data_double_escaped_dash_state() []Token {
 	}
 
 	t.state = .script_data_double_escaped
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // script_data_double_escaped_dash_dash_state follows the spec 13.2.5.29 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-double-escaped-dash-dash-state
@@ -1173,12 +1173,12 @@ fn (mut t Tokenizer) script_data_double_escaped_dash_dash_state() []Token {
 	}
 
 	if t.char == `-` {
-		return [CharacterToken{`-`}]
+		return [CharacterToken(`-`)]
 	}
 
 	if t.char == `<` {
 		t.state = .script_data_double_escaped_less_than_sign
-		return [CharacterToken{`<`}]
+		return [CharacterToken(`<`)]
 	}
 
 	if t.char == null {
@@ -1189,7 +1189,7 @@ fn (mut t Tokenizer) script_data_double_escaped_dash_dash_state() []Token {
 	}
 
 	t.state = .script_data_double_escaped
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // script_data_double_escaped_less_than_sign_state follows the spec 13.2.5.30 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-double-escaped-less-than-sign-state
@@ -1207,7 +1207,7 @@ fn (mut t Tokenizer) script_data_double_escaped_less_than_sign_state() []Token {
 	if t.char == `/` {
 		t.buffer = new_builder(50)
 		t.state = .script_data_double_escape_end
-		return [CharacterToken{`/`}]
+		return [CharacterToken(`/`)]
 	}
 	
 	return anything_else()
@@ -1231,13 +1231,13 @@ fn (mut t Tokenizer) script_data_double_escape_end_state() []Token {
 			return t.script_data_escaped_state()
 		} else {
 			t.state = .script_data_double_escaped
-			return [CharacterToken{t.char}]
+			return [CharacterToken(t.char)]
 		}
 	}
 
 	if t.char in ascii_alpha {
 		t.buffer.write_rune(rune_to_lower(t.char))
-		return [CharacterToken{t.char}]
+		return [CharacterToken(t.char)]
 	}
 
 	return anything_else()
@@ -1628,10 +1628,10 @@ fn (mut t Tokenizer) markup_declaration_open_state() []Token {
 		return t.doctype_state()
 	}
 
-	// not sure I understand what the adjusted current node is
+	// not sure I understand what the adjusted current NodeBase is
 	if t.look_ahead('[CDATA[', true) {
 		// Consume those characters. If there is an adjusted current
-		// node and it is not an element in the HTML namespace, then
+		// NodeBase and it is not an element in the HTML namespace, then
 		// switch to the CDATA section state. Otherwise, this is a
 		// cdata-in-html-content parse error. Create a comment token
 		// whose data is the "[CDATA[" string. Switch to the bogus
@@ -1871,7 +1871,7 @@ fn (mut t Tokenizer) comment_end_state() []Token {
 
 	if t.char == `>` {
 		t.state = .data
-		return t.data_state()
+		return [t.token]
 	}
 
 	if t.char == `!` {
@@ -2614,7 +2614,7 @@ fn (mut t Tokenizer) cdata_section_state() []Token {
 		return t.cdata_section_bracket_state()
 	}
 
-	return [CharacterToken{t.char}]
+	return [CharacterToken(t.char)]
 }
 
 // cdata_section_bracket_state follows the spec 13.2.5.70 at https://html.spec.whatwg.org/multipage/parsing.html#cdata-section-bracket-state
@@ -2622,7 +2622,7 @@ fn (mut t Tokenizer) cdata_section_bracket_state() []Token {
 	anything_else := fn [mut t] () []Token {
 		t.reconsume()
 		t.state = .cdata_section
-		return [Token(CharacterToken{`]`})]
+		return [Token(CharacterToken(`]`))]
 	}
 
 	t.consume() or {
@@ -2642,7 +2642,7 @@ fn (mut t Tokenizer) cdata_section_end_state() []Token {
 	anything_else := fn [mut t] () []Token {
 		t.reconsume()
 		t.state = .cdata_section_bracket
-		return [Token(CharacterToken{`]`})]
+		return [Token(CharacterToken(`]`))]
 	}
 
 	t.consume() or {
@@ -2650,7 +2650,7 @@ fn (mut t Tokenizer) cdata_section_end_state() []Token {
 	}
 
 	if t.char == `]` {
-		return [CharacterToken{`]`}]
+		return [CharacterToken(`]`)]
 	}
 
 	if t.char == `>` {
@@ -2768,7 +2768,7 @@ fn (mut t Tokenizer) ambiguous_ampersand_state() []Token {
 			attr.value.write_rune(t.char)
 			return t.ambiguous_ampersand_state()
 		} else {
-			return [CharacterToken{t.char}]
+			return [CharacterToken(t.char)]
 		}
 	}
 

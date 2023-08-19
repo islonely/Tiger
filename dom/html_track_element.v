@@ -15,7 +15,7 @@ pub mut:
 	src         string
 	src_lang    string
 	label       string
-	default    bool
+	default     bool
 	ready_state TrackReadyState
 	// track TextTrack
 }

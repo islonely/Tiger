@@ -8,7 +8,7 @@ type Token = DoctypeToken | TagToken | CommentToken | CharacterToken | EOFToken
 // html returns the HTML code representation of a Token.
 fn (tok Token) html() string {
 	return match tok {
-		CharacterToken { tok.data.str() }
+		CharacterToken { tok.str() }
 		CommentToken { tok.html() }
 		DoctypeToken { tok.html() }
 		TagToken { tok.html() }
@@ -140,17 +140,14 @@ pub fn (tok CommentToken) html() string {
 	return '<!--' + builder_contents(tok.data) + '-->'
 }
 
-// CharacterToken represents consecutive characters in an HTML
-// document.
-struct CharacterToken {
-	data rune
-}
+// CharacterToken represents a single character in an HTML document.
+type CharacterToken = rune
 
 // string_to_tokens converts a string into an array of CharacterTokens.
 fn string_to_tokens(str string) []Token {
 	mut toks := []Token{cap: str.runes().len}
 	for r in str.runes() {
-		toks << CharacterToken{data: r}
+		toks << CharacterToken(r)
 	}
 	return toks
 }
