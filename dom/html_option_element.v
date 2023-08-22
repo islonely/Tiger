@@ -13,3 +13,11 @@ pub mut:
 	text             string
 	index            i64
 }
+
+[inline]
+pub fn HTMLOptionElement.new(owner_document &Document) &HTMLOptionElement {
+	return &HTMLOptionElement{
+		owner_document: owner_document
+		local_name: 'option'
+	}
+}

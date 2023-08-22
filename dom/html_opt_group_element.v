@@ -7,3 +7,11 @@ pub mut:
 	disabled bool
 	label    string
 }
+
+[inline]
+pub fn HTMLOptGroupElement.new(owner_document &Document) &HTMLOptGroupElement {
+	return &HTMLOptGroupElement{
+		owner_document: owner_document
+		local_name: 'optgroup'
+	}
+}

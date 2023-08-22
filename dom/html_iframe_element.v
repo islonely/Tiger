@@ -24,3 +24,11 @@ pub mut:
 	margin_height string
 	margin_width  string
 }
+
+[inline]
+pub fn HTMLIframeElement.new(owner_document &Document) &HTMLIframeElement {
+	return &HTMLIframeElement{
+		owner_document: owner_document
+		local_name: 'iframe'
+	}
+}

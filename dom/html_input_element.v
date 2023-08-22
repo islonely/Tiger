@@ -52,3 +52,11 @@ pub mut:
 	align   string
 	use_map string
 }
+
+[inline]
+pub fn HTMLInputElement.new(owner_document &Document) &HTMLInputElement {
+	return &HTMLInputElement{
+		owner_document: owner_document
+		local_name: 'input'
+	}
+}

@@ -6,3 +6,11 @@ pub struct HTMLTimeElement {
 pub mut:
 	date_time string
 }
+
+[inline]
+pub fn HTMLTimeElement.new(owner_document &Document) &HTMLTimeElement {
+	return &HTMLTimeElement{
+		owner_document: owner_document
+		local_name: 'time'
+	}
+}

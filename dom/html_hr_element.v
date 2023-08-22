@@ -11,3 +11,11 @@ pub mut:
 	size     string
 	width    string
 }
+
+[inline]
+pub fn HTMLHRElement.new(owner_document &Document) &HTMLHRElement {
+	return &HTMLHRElement{
+		owner_document: owner_document
+		local_name: 'hr'
+	}
+}

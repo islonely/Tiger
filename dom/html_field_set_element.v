@@ -13,3 +13,11 @@ pub mut:
 	validity           ValidityState
 	validation_message string
 }
+
+[inline]
+pub fn HTMLFieldSetElement.new(owner_document &Document) &HTMLFieldSetElement {
+	return &HTMLFieldSetElement{
+		owner_document: owner_document
+		local_name: 'fieldset'
+	}
+}

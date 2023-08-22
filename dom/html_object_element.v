@@ -28,3 +28,11 @@ pub mut:
 	use_map   string
 	border    string
 }
+
+[inline]
+pub fn HTMLObjectElement.new(owner_document &Document) &HTMLObjectElement {
+	return &HTMLObjectElement{
+		owner_document: owner_document
+		local_name: 'object'
+	}
+}

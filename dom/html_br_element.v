@@ -7,3 +7,11 @@ pub mut:
 	// obsolete
 	clear string
 }
+
+[inline]
+pub fn HTMLBRElement.new(owner_document &Document) &HTMLBRElement {
+	return &HTMLBRElement{
+		owner_document: owner_document
+		local_name: 'br'
+	}
+}

@@ -11,3 +11,11 @@ pub mut:
 	// obsolete
 	scheme string
 }
+
+[inline]
+pub fn HTMLMetaElement.new(owner_document &Document) &HTMLMetaElement {
+	return &HTMLMetaElement{
+		owner_document: owner_document
+		local_name: 'meta'
+	}
+}

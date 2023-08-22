@@ -11,3 +11,11 @@ pub mut:
 	ch_off  string
 	v_align string
 }
+
+[inline]
+pub fn HTMLTableSectionElement.new(owner_document &Document, name string) &HTMLTableSectionElement {
+	return &HTMLTableSectionElement{
+		owner_document: owner_document
+		local_name: name
+	}
+}

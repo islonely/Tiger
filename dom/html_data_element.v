@@ -6,3 +6,11 @@ pub struct HTMLDataElement {
 pub mut:
 	value string
 }
+
+[inline]
+pub fn HTMLDataElement.new(owner_document &Document) &HTMLDataElement {
+	return &HTMLDataElement{
+		owner_document: owner_document
+		local_name: 'data'
+	}
+}

@@ -10,3 +10,11 @@ pub mut:
 	// obsolete
 	@type string
 }
+
+[inline]
+pub fn HTMLStyleElement.new(owner_document &Document) &HTMLStyleElement {
+	return &HTMLStyleElement{
+		owner_document: owner_document
+		local_name: 'style'
+	}
+}

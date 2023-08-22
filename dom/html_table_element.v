@@ -20,3 +20,11 @@ pub mut:
 	cell_padding string
 	cell_spacing string
 }
+
+[inline]
+pub fn HTMLTableElement.new(owner_document &Document) &HTMLTableElement {
+	return &HTMLTableElement{
+		owner_document: owner_document
+		local_name: 'table'
+	}
+}

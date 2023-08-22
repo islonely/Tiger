@@ -13,3 +13,11 @@ pub mut:
 	bg_color   string
 	background string
 }
+
+[inline]
+pub fn HTMLBodyElement.new(owner_document &Document) &HTMLBodyElement {
+	return &HTMLBodyElement{
+		owner_document: owner_document
+		local_name: 'body'
+	}
+}

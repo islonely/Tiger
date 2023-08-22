@@ -22,3 +22,11 @@ pub mut:
 	validation_message string
 	labels             []&Node
 }
+
+[inline]
+pub fn HTMLSelectElement.new(owner_document &Document) &HTMLSelectElement {
+	return &HTMLSelectElement{
+		owner_document: owner_document
+		local_name: 'select'
+	}
+}

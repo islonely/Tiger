@@ -7,3 +7,11 @@ pub mut:
 	// obsolete
 	compact bool
 }
+
+[inline]
+pub fn HTMLMenuElement.new(owner_document &Document) &HTMLMenuElement {
+	return &HTMLMenuElement{
+		owner_document: owner_document
+		local_name: 'menu'
+	}
+}

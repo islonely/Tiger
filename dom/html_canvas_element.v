@@ -7,3 +7,11 @@ pub mut:
 	width  u64
 	height u64
 }
+
+[inline]
+pub fn HTMLCanvasElement.new(owner_document &Document) &HTMLCanvasElement {
+	return &HTMLCanvasElement{
+		owner_document: owner_document
+		local_name: 'canvas'
+	}
+}

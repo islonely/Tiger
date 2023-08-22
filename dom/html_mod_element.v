@@ -7,3 +7,11 @@ pub mut:
 	cite      string
 	date_time string
 }
+
+[inline]
+pub fn HTMLModElement.new(owner_document &Document) &HTMLModElement {
+	return &HTMLModElement{
+		owner_document: owner_document
+		local_name: 'mod'
+	}
+}

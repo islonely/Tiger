@@ -29,3 +29,11 @@ pub mut:
 	selection_end       u64
 	selection_direction string
 }
+
+[inline]
+pub fn HTMLTextAreaElement.new(owner_document &Document) &HTMLTextAreaElement {
+	return &HTMLTextAreaElement{
+		owner_document: owner_document
+		local_name: 'textarea'
+	}
+}

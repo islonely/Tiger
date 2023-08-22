@@ -11,3 +11,11 @@ pub struct HTMLSlotElement {
 pub mut:
 	name string
 }
+
+[inline]
+pub fn HTMLSlotElement.new(owner_document &Document) &HTMLSlotElement {
+	return &HTMLSlotElement{
+		owner_document: owner_document
+		local_name: 'slot'
+	}
+}

@@ -25,3 +25,11 @@ pub mut:
 	rev     string
 	target  string
 }
+
+[inline]
+pub fn HTMLLinkElement.new(owner_document &Document) &HTMLLinkElement {
+	return &HTMLLinkElement{
+		owner_document: owner_document
+		local_name: 'link'
+	}
+}

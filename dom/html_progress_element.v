@@ -9,3 +9,11 @@ pub mut:
 	position f64
 	labels   []&Node
 }
+
+[inline]
+pub fn HTMLProgressElement.new(owner_document &Document) &HTMLProgressElement {
+	return &HTMLProgressElement{
+		owner_document: owner_document
+		local_name: 'progress'
+	}
+}

@@ -14,3 +14,11 @@ pub mut:
 	v_align  string
 	bg_color string
 }
+
+[inline]
+pub fn HTMLTableRowElement.new(owner_document &Document) &HTMLTableRowElement {
+	return &HTMLTableRowElement{
+		owner_document: owner_document
+		local_name: 'tr'
+	}
+}

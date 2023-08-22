@@ -12,3 +12,11 @@ pub mut:
 	v_align string
 	width   string
 }
+
+[inline]
+pub fn HTMLTableColElement.new(owner_document &Document) &HTMLTableColElement {
+	return &HTMLTableColElement{
+		owner_document: owner_document
+		local_name: 'col'
+	}
+}

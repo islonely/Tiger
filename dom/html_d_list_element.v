@@ -6,3 +6,11 @@ pub struct HTMLDListElement {
 pub mut:
 	compact bool
 }
+
+[inline]
+pub fn HTMLDListElement.new(owner_document &Document) &HTMLDListElement {
+	return &HTMLDListElement{
+		owner_document: owner_document
+		local_name: 'dl'
+	}
+}

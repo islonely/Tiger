@@ -7,3 +7,11 @@ pub mut:
 	// obsolete
 	width i64
 }
+
+[inline]
+pub fn HTMLPreElement.new(owner_document &Document) &HTMLPreElement {
+	return &HTMLPreElement{
+		owner_document: owner_document
+		local_name: 'pre'
+	}
+}

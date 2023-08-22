@@ -7,3 +7,10 @@ pub mut:
 	href   string
 	target string
 }
+
+pub fn HTMLBaseElement.new(owner_document &Document) &HTMLBaseElement {
+	return &HTMLBaseElement{
+		owner_document: owner_document
+		local_name: 'base'
+	}
+}

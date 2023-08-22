@@ -68,11 +68,13 @@ pub mut:
 	bg_color    string
 }
 
+// has_child_nodes returns whether or not the embedded Node has children.
 [inline]
 pub fn (doc Document) has_child_nodes() bool {
 	return doc.child_nodes.len > 0
 }
 
+// append_child adds a node to the embedded Node.
 pub fn (mut doc Document) append_child(child &NodeInterface) {
 	if !doc.has_child_nodes() {
 		unsafe {
@@ -83,4 +85,17 @@ pub fn (mut doc Document) append_child(child &NodeInterface) {
 	unsafe {
 		doc.last_child = child
 	}
+}
+
+// pretty_print prints a pretty list of all the document's descendants.
+[inline]
+pub fn (doc Document) pretty_print() {
+	println(doc.pretty_string())
+}
+
+// pretty_string returns the Document as a tree.
+[inline]
+pub fn (doc Document) pretty_string() string {
+	uri := if doc.base_uri != '' { doc.base_uri } else { '<no_uri>' }
+	return 'document@${uri}\n' + NodeInterface(doc).recur_pretty_str(1, 2)
 }

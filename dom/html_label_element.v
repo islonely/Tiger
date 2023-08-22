@@ -8,3 +8,11 @@ pub mut:
 	html_for string
 	control  ?&HTMLElement
 }
+
+[inline]
+pub fn HTMLLabelElement.new(owner_document &Document) &HTMLLabelElement {
+	return &HTMLLabelElement{
+		owner_document: owner_document
+		local_name: 'label'
+	}
+}

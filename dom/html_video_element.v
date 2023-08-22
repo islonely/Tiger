@@ -11,3 +11,11 @@ pub mut:
 	poster       string
 	plays_inline bool
 }
+
+[inline]
+pub fn HTMLVideoElement.new(owner_document &Document) &HTMLVideoElement {
+	return &HTMLVideoElement{
+		owner_document: owner_document
+		local_name: 'video'
+	}
+}

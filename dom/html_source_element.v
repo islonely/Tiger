@@ -12,3 +12,11 @@ pub mut:
 	width  u64
 	height u64
 }
+
+[inline]
+pub fn HTMLSourceElement.new(owner_document &Document) &HTMLSourceElement {
+	return &HTMLSourceElement{
+		owner_document: owner_document
+		local_name: 'source'
+	}
+}

@@ -19,3 +19,11 @@ pub mut:
 	validation_message string
 	labels             []&Node
 }
+
+[inline]
+pub fn HTMLButtonElement.new(owner_document &Document) &HTMLButtonElement {
+	return &HTMLButtonElement{
+		owner_document: owner_document
+		local_name: 'button'
+	}
+}

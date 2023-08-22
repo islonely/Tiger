@@ -33,3 +33,11 @@ pub mut:
 	// elements HTMLFormControlsCollection
 	length u64
 }
+
+[inline]
+pub fn HTMLFormElement.new(owner_document &Document) &HTMLFormElement {
+	return &HTMLFormElement{
+		owner_document: owner_document
+		local_name: 'form'
+	}
+}

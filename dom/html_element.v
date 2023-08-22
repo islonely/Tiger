@@ -26,3 +26,11 @@ pub mut:
 	outer_text       string
 	popover          ?string
 }
+
+[inline]
+pub fn HTMLElement.new(owner_document &Document, name string) &HTMLElement {
+	return &HTMLElement{
+		owner_document: owner_document
+		local_name: name
+	}
+}

@@ -6,3 +6,12 @@ pub struct HTMLTitleElement {
 pub mut:
 	text string
 }
+
+[inline]
+pub fn HTMLTitleElement.new(owner_document &Document, title string) &HTMLTitleElement {
+	return &HTMLTitleElement{
+		owner_document: owner_document
+		local_name: 'title'
+		text: title
+	}
+}

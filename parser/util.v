@@ -5,13 +5,13 @@ import term
 
 // Used in `fn put` to write specific colors to screen.
 const (
-	notice  = term.bright_yellow('notice')
-	warning = $if windows {
+	notice_prefix  = term.bright_yellow('notice')
+	warning_prefix = $if windows {
 		term.bright_magenta('warning')
 	} $else {
 		term.rgb(285, 87, 51, 'warning')
 	}
-	fatal = $if windows {
+	fatal_prefix = $if windows {
 		term.bright_red('fatal')
 	} $else {
 		term.rgb(212, 32, 32, 'error')
@@ -57,9 +57,9 @@ struct PrintParams {
 fn put(params PrintParams) string {
 	subject := match params.typ {
 		.@none { params.text }
-		.notice { parser.notice + ': ${params.text}' }
-		.warning { '' + parser.warning + ': ${params.text}' }
-		.fatal { '' + parser.fatal + ': ${params.text}' }
+		.notice { parser.notice_prefix + ': ${params.text}' }
+		.warning { parser.warning_prefix + ': ${params.text}' }
+		.fatal { parser.fatal_prefix + ': ${params.text}' }
 	}
 	if !params.print {
 		return subject

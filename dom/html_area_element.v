@@ -17,3 +17,10 @@ pub mut:
 	// obsolete
 	no_href bool
 }
+
+pub fn HTMLAreaElement.new(owner_document &Document) &HTMLAreaElement {
+	return &HTMLAreaElement{
+		owner_document: owner_document
+		local_name: 'area'
+	}
+}

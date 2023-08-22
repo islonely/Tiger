@@ -12,3 +12,11 @@ pub mut:
 	align string
 	name  string
 }
+
+[inline]
+pub fn HTMLEmbedElement.new(owner_document &Document) &HTMLEmbedElement {
+	return &HTMLEmbedElement{
+		owner_document: owner_document
+		local_name: 'embed'
+	}
+}

@@ -21,3 +21,10 @@ pub mut:
 	rev     string
 	shape   string
 }
+
+pub fn HTMLAnchorElement.new(owner_document &Document) &HTMLAnchorElement {
+	return &HTMLAnchorElement{
+		owner_document: owner_document
+		local_name: 'a'
+	}
+}

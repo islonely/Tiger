@@ -12,3 +12,11 @@ pub mut:
 	optimum f64
 	labels  []&Node
 }
+
+[inline]
+pub fn HTMLMeterElement.new(owner_document &Document) &HTMLMeterElement {
+	return &HTMLMeterElement{
+		owner_document: owner_document
+		local_name: 'meter'
+	}
+}

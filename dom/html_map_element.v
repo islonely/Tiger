@@ -7,3 +7,11 @@ pub mut:
 	name string
 	// areas HTMLCollection
 }
+
+[inline]
+pub fn HTMLMapElement.new(owner_document &Document) &HTMLMapElement {
+	return &HTMLMapElement{
+		owner_document: owner_document
+		local_name: 'map'
+	}
+}

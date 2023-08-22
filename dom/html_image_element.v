@@ -30,3 +30,11 @@ pub mut:
 	long_desc string
 	border    string
 }
+
+[inline]
+pub fn HTMLImageElement.new(owner_document &Document) &HTMLImageElement {
+	return &HTMLImageElement{
+		owner_document: owner_document
+		local_name: 'img'
+	}
+}

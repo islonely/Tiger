@@ -4,3 +4,10 @@ module dom
 pub struct HTMLAudioElement {
 	HTMLMediaElement
 }
+
+pub fn HTMLAudioElement.new(owner_document &Document) &HTMLAudioElement {
+	return &HTMLAudioElement{
+		owner_document: owner_document
+		local_name: 'audio'
+	}
+}

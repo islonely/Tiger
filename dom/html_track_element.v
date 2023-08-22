@@ -19,3 +19,11 @@ pub mut:
 	ready_state TrackReadyState
 	// track TextTrack
 }
+
+[inline]
+pub fn HTMLTrackElement.new(owner_document &Document) &HTMLTrackElement {
+	return &HTMLTrackElement{
+		owner_document: owner_document
+		local_name: 'track'
+	}
+}

@@ -22,3 +22,11 @@ pub mut:
 	v_align  string
 	bg_color string
 }
+
+[inline]
+pub fn HTMLTableCellElement.new(owner_document &Document) &HTMLTableCellElement {
+	return &HTMLTableCellElement{
+		owner_document: owner_document
+		local_name: 'td'
+	}
+}

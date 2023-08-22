@@ -6,3 +6,11 @@ pub struct HTMLQuoteElement {
 pub mut:
 	cite string
 }
+
+[inline]
+pub fn HTMLQuoteElement.new(owner_document &Document) &HTMLQuoteElement {
+	return &HTMLQuoteElement{
+		owner_document: owner_document
+		local_name: 'quote'
+	}
+}

@@ -54,7 +54,7 @@ pub fn (tok DoctypeToken) system_identifier() string {
 // html returns the HTML code reprensentation of the DoctypeToken.
 [inline]
 pub fn (tok DoctypeToken) html() string {
-	return '<!DOCTYPE $tok.name' + if tok.public_identifier != doctype_missing {'public="$tok.public_identifier()"'} else {''} + if tok.system_identifier != doctype_missing {' system="$tok.system_identifier()"'} else {''} + '>'
+	return '<!DOCTYPE $tok.name' + if tok.public_identifier != doctype_missing {'public="${tok.public_identifier()}"'} else {''} + if tok.system_identifier != doctype_missing {' system="${tok.system_identifier()}"'} else {''} + '>'
 }
 
 // TagToken represents the occurence of <tag attribute="value"></tag>

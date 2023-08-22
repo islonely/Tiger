@@ -20,3 +20,11 @@ pub mut:
 	event    string
 	html_for string
 }
+
+[inline]
+pub fn HTMLScriptElement.new(owner_document &Document) &HTMLScriptElement {
+	return &HTMLScriptElement{
+		owner_document: owner_document
+		local_name: 'script'
+	}
+}
