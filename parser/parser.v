@@ -109,11 +109,9 @@ mut:
 	original_insertion_mode  InsertionMode = .@none
 	template_insertion_modes []InsertionMode
 	open_elems               []&dom.NodeInterface
-	doc                      &dom.Document = &dom.Document{
-	node_type: .document
-}
+	doc                      &dom.Document = dom.Document.new()
 	// adjusted_current_NodeBase    &dom.NodeBase
-	last_token		Token
+	last_token      Token
 	current_token   Token
 	next_token      Token
 	reconsume_token bool
@@ -200,7 +198,12 @@ fn (mut p Parser) consume_token() {
 // `Parser.next_token` is an open tag HTML tag (<html>).
 // https://html.spec.whatwg.org/multipage/parsing.html#the-before-html-insertion-mode
 fn (mut p Parser) before_html_insertion_mode() {
-	anything_else := fn [mut p] () {p}
+	anything_else := fn [mut p] () {
+		mut child := dom.HTMLHtmlElement.new(p.doc)
+		p.open_elems << child
+		p.insertion_mode = .before_head
+		p.reconsume_token = true
+	}
 	match mut p.current_token {
 		DoctypeToken {
 			put(typ: .notice, text: 'Ignoring DOCTYPE token.')
@@ -210,8 +213,7 @@ fn (mut p Parser) before_html_insertion_mode() {
 			p.doc.append_child(child)
 		}
 		CharacterToken {
-			if p.current_token in parser.whitespace {
-
+			if p.current_token in whitespace {
 			} else {
 				anything_else()
 			}
@@ -220,10 +222,13 @@ fn (mut p Parser) before_html_insertion_mode() {
 			if p.current_token.is_start {
 				if p.current_token.name() == 'html' {
 					mut child := dom.HTMLHtmlElement.new(p.doc)
+					println(dom.NodeInterface(child).node_name.len)
 					p.doc.append_child(child)
 					p.open_elems << child
+					p.insertion_mode = .before_head
+				} else {
+					anything_else()
 				}
-				return
 			} else {
 				if p.current_token.name() in ['head', 'body', 'html', 'br'] {
 					anything_else()
@@ -244,7 +249,7 @@ fn (mut p Parser) before_html_insertion_mode() {
 fn (mut p Parser) initial_insertion_mode() {
 	match mut p.current_token {
 		CharacterToken {
-			if p.current_token in parser.whitespace {
+			if p.current_token in whitespace {
 				return
 			}
 		}

@@ -68,6 +68,16 @@ pub mut:
 	bg_color    string
 }
 
+[inline]
+pub fn Document.new() &Document {
+	// this is stupid imo, but the spec calls for it
+	mut doc := &Document{
+		node_type: .document
+	}
+	doc.owner_document = doc
+	return doc
+}
+
 // has_child_nodes returns whether or not the embedded Node has children.
 [inline]
 pub fn (doc Document) has_child_nodes() bool {

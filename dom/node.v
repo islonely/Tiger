@@ -5,12 +5,12 @@ import strings
 // https://infra.spec.whatwg.org/#html-namespace
 const (
 	namespace = {
-		'html': 'http://www.w3.org/1999/xhtml'
+		'html':   'http://www.w3.org/1999/xhtml'
 		'mathml': 'http://www.w3.org/1998/Math/MathML'
-		'svg': 'http://www.w3.org/2000/svg'
-		'xlink': 'http://www.w3.org/1999/xlink'
-		'xml': 'http://www.w3.org/XML/1998/namespace'
-		'xmlns': 'http://www.w3.org/2000/xmlns/'
+		'svg':    'http://www.w3.org/2000/svg'
+		'xlink':  'http://www.w3.org/1999/xlink'
+		'xml':    'http://www.w3.org/XML/1998/namespace'
+		'xmlns':  'http://www.w3.org/2000/xmlns/'
 	}
 )
 
@@ -59,8 +59,6 @@ struct GetRootNodeOptions {
 }
 
 // https://dom.spec.whatwg.org/#node
-
-[heap]
 pub interface NodeInterface {
 mut:
 	node_type NodeType
@@ -133,7 +131,7 @@ fn (n NodeInterface) recur_pretty_str(depth int, depth_size int) string {
 		name := if child.node_name.len == 0 {
 			':child.node_name'
 		} else if child is Element {
-			':${child.local_name}'	
+			':${child.local_name}'
 		} else if child is CommentNode {
 			':"${child.text}"'
 		} else {
