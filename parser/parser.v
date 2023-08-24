@@ -157,7 +157,7 @@ pub fn (mut p Parser) parse() &dom.Document {
 			.after_body {}
 			.after_frameset {}
 			.after_head {}
-			.before_head {}
+			.before_head { p.before_head_insertion_mode() }
 			.before_html { p.before_html_insertion_mode() }
 			.initial { p.initial_insertion_mode() }
 			.in_body {}
@@ -222,6 +222,7 @@ fn (mut p Parser) before_html_insertion_mode() {
 			if p.current_token.is_start {
 				if p.current_token.name() == 'html' {
 					mut child := dom.HTMLHtmlElement.new(p.doc)
+					//////////////////////////////////////////////////////////
 					println(dom.NodeInterface(child).node_name.len)
 					p.doc.append_child(child)
 					p.open_elems << child
@@ -322,3 +323,71 @@ fn (mut p Parser) initial_insertion_mode() {
 		}
 	}
 }
+
+// before_head_insertion_mode
+// https://html.spec.whatwg.org/multipage/parsing.html#the-before-head-insertion-mode
+fn (mut p Parser) before_head_insertion_mode() {
+	anything_else := fn [mut p] () {
+		mut child := dom.HTMLHeadElement.new(p.doc)
+		p.doc.head = child
+		mut last := p.open_elems.last()
+		last.append_child(child)
+		p.insertion_mode = .in_head
+		return
+	}
+	match mut p.current_token {
+		CharacterToken {
+			if p.current_token in parser.whitespace {
+				return
+			}
+
+			anything_else()
+		}
+		CommentToken {
+			mut child := dom.CommentNode.new(p.doc, p.current_token.data())
+			mut last := p.open_elems.last()
+			last.append_child(child)
+		}
+		DoctypeToken {
+			put(
+				typ: .notice
+				text: 'Invalid DOCTYPE token. Ignoring token.'
+			)
+		}
+		TagToken {
+			if p.current_token.is_start {
+				if p.current_token.name() == 'html' {
+					p.in_body_insertion_mode()
+					return
+				}
+
+				if p.current_token.name() == 'head' {
+					mut child := dom.HTMLHeadElement.new(p.doc)
+					mut last := p.open_elems.last()
+					p.doc.head = child
+					last.append_child(child)
+					p.insertion_mode = .in_head
+					return
+				}
+
+				anything_else()
+				return
+			}
+			
+			if p.current_token.name() in ['head', 'body', 'html', 'br'] {
+				anything_else()
+				return
+			}
+
+			put(
+				typ: .notice
+				text: 'Invalid end tag token. Ignoring token.'
+			)
+		}
+		else {
+			anything_else()
+		}
+	}
+}
+
+fn (mut p Parser) in_body_insertion_mode() {}
