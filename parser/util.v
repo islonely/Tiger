@@ -81,13 +81,6 @@ fn rune_to_lower(r rune) rune {
 	}
 }
 
-// builder_contents returns the value of a strings.Builder without
-// terminating the builder like strings.Builder.str does.
-[inline]
-fn builder_contents(bldr Builder) string {
-	return bldr.bytestr()
-}
-
 // is_surrogate returns whether or not a rune is a surrogate
 // character.
 [inline]

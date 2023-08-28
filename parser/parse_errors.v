@@ -2,7 +2,7 @@ module parser
 
 // https://html.spec.whatwg.org/multipage/parsing.html#parse-errors
 enum ParseError {
-	abrupt_closing_of_empty_document
+	abrupt_closing_of_empty_comment
 	abrupt_doctype_public_identifier
 	abrupt_doctype_system_identifier
 	absence_of_digits_in_numeric_character_reference
@@ -36,6 +36,7 @@ enum ParseError {
 	missing_whitespace_before_doctype_name
 	missing_whitespace_between_attributes
 	missing_whitespace_between_doctype_public_and_system_identifiers
+	missing_whitespace_between_doctype_system_keyword_and_system_identifier
 	nested_comment
 	noncharacter_character_reference
 	noncharacter_in_input_stream

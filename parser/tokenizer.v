@@ -187,10 +187,10 @@ fn (mut t Tokenizer) flush_codepoints() []Token {
 	] {
 		mut tok := &(t.token as TagToken)
 		mut attr := &(tok.attributes[tok.attributes.len-1])
-		attr.value.write_string(builder_contents(t.buffer))
+		attr.value.write_string(t.buffer.bytestr())
 		return []Token{}
 	} else {
-		return string_to_tokens(builder_contents(t.buffer))
+		return string_to_tokens(t.buffer.bytestr())
 	}
 }
 
@@ -353,8 +353,7 @@ fn (mut t Tokenizer) rcdata_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected Null Character')
+		println(ParseError.unexpected_null_character)
 		return [replacement_token]
 	}
 
@@ -374,8 +373,7 @@ fn (mut t Tokenizer) rawtext_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected Null Character')
+		println(ParseError.unexpected_null_character)
 		return [replacement_token]
 	}
 
@@ -395,8 +393,7 @@ fn (mut t Tokenizer) script_data_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected Null Character')
+		println(ParseError.unexpected_null_character)
 		return [replacement_token]
 	}
 
@@ -411,8 +408,7 @@ fn (mut t Tokenizer) plaintext_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected Null Character')
+		println(ParseError.unexpected_null_character)
 		return [replacement_token]
 	}
 
@@ -422,14 +418,12 @@ fn (mut t Tokenizer) plaintext_state() []Token {
 // tag_open_state follows the spec 13.2.5.6 at https://html.spec.whatwg.org/multipage/parsing.html#tag-open-state
 fn (mut t Tokenizer) tag_open_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF before tag name.')
+		println(ParseError.eof_before_tag_name)
 		t.state = .eof
 		return [
 			CharacterToken(`<`),
 			EOFToken{
-				name: name__eof_before_tag_name
-				mssg: mssg__eof_before_tag_name
+				mssg: ParseError.eof_before_tag_name.str()
 			}
 		]
 	}
@@ -452,16 +446,14 @@ fn (mut t Tokenizer) tag_open_state() []Token {
 	}
 
 	if t.char == `?` {
-		// parse error
-		println('Unexpected question mark instead of tag name.')
+		println(ParseError.unexpected_question_makr_instead_of_tag_name)
 		t.token = CommentToken{}
 		t.reconsume()
 		t.state = .bogus_comment
 		return t.bogus_comment_state()
 	}
 
-	// parse error
-	println('Invalid first character of tag name.')
+	println(ParseError.invalid_first_character_of_tag_name)
 	t.reconsume()
 	t.state = .data
 	return [CharacterToken(`<`)]
@@ -470,15 +462,13 @@ fn (mut t Tokenizer) tag_open_state() []Token {
 // end_tag_open_state follows the spec 13.2.5.7 at https://html.spec.whatwg.org/multipage/parsing.html#end-tag-open-state
 fn (mut t Tokenizer) end_tag_open_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF before tag name.')
+		println(ParseError.eof_before_tag_name)
 		t.state = .eof
 		return [
 			CharacterToken(`<`),
 			CharacterToken(`/`),
 			EOFToken{
-				name: name__eof_before_tag_name
-				mssg: mssg__eof_before_tag_name
+				mssg: ParseError.eof_before_tag_name.str()
 			}
 		]
 	}
@@ -491,14 +481,12 @@ fn (mut t Tokenizer) end_tag_open_state() []Token {
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Missing end tag name.')
+		println(ParseError.missing_end_tag_name)
 		t.state = .data
 		return t.data_state()
 	}
 
-	// parse error
-	println('Invalid first character of tag name.')
+	println(ParseError.invalid_first_character_of_tag_name)
 	t.token = CommentToken{}
 	t.reconsume()
 	t.state = .bogus_comment
@@ -508,12 +496,10 @@ fn (mut t Tokenizer) end_tag_open_state() []Token {
 // tag_name_state follows the spec 13.2.5.8 at https://html.spec.whatwg.org/multipage/parsing.html#tag-name-state
 fn (mut t Tokenizer) tag_name_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in tag.')
+		println(ParseError.eof_in_tag)
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_tag
-			mssg: mssg__eof_in_tag
+			mssg: ParseError.eof_in_tag.str()
 		}]
 	}
 
@@ -533,15 +519,12 @@ fn (mut t Tokenizer) tag_name_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected Null Character')
-		//t.tagtoken__name_append(0xfffd)
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as TagToken)
 		tok.name.write_rune(0xfffd)
 		return t.tag_name_state()
 	}
 
-	// t.tagtoken__name_append(t.char)
 	mut tok := &(t.token as TagToken)
 	tok.name.write_rune(t.char)
 	return t.tag_name_state()
@@ -630,7 +613,6 @@ fn (mut t Tokenizer) rcdata_end_tag_name_state() []Token {
 	}
 
 	if t.char in ascii_alpha {
-		// t.tagtoken__name_append(rune_to_lower(t.char))
 		mut tok := &(t.token as TagToken)
 		tok.name.write_rune(rune_to_lower(t.char))
 		t.buffer.write_rune(t.char)
@@ -723,7 +705,6 @@ fn (mut t Tokenizer) rawtext_end_tag_name_state() []Token {
 	}
 
 	if t.char in ascii_alpha {
-		// t.tagtoken__name_append(rune_to_lower(t.char))
 		mut tok := &(t.token as TagToken)
 		tok.name.write_rune(rune_to_lower(t.char))
 		t.buffer.write_rune(t.char)
@@ -871,12 +852,9 @@ fn (mut t Tokenizer) script_data_escape_start_dash_state() []Token {
 // script_data_escaped_state follows the spec 13.2.5.20 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-escaped-state
 fn (mut t Tokenizer) script_data_escaped_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in script html comment like text.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_script_comment_like_text
-			mssg: mssg__eof_in_script_comment_like_text
+			mssg: ParseError.eof_in_script_comment_like_text.str()
 		}]
 	}
 
@@ -891,8 +869,7 @@ fn (mut t Tokenizer) script_data_escaped_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		return [replacement_token]
 	}
 
@@ -902,12 +879,9 @@ fn (mut t Tokenizer) script_data_escaped_state() []Token {
 // script_data_escaped_dash_state follows the spec 13.2.5.21 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-escaped-dash-state
 fn (mut t Tokenizer) script_data_escaped_dash_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in script html comment like text.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_script_comment_like_text
-			mssg: mssg__eof_in_script_comment_like_text
+			mssg: ParseError.eof_in_script_comment_like_text.str()
 		}]
 	}
 
@@ -922,8 +896,7 @@ fn (mut t Tokenizer) script_data_escaped_dash_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		return [replacement_token]
 	}
 
@@ -934,12 +907,9 @@ fn (mut t Tokenizer) script_data_escaped_dash_state() []Token {
 // script_data_escaped_dash_dash_state follows the spec 13.2.5.22 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-escaped-dash-dash-state
 fn (mut t Tokenizer) script_data_escaped_dash_dash_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in script html comment like text.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_script_comment_like_text
-			mssg: mssg__eof_in_script_comment_like_text
+			mssg: ParseError.eof_in_script_comment_like_text.str()
 		}]
 	}
 
@@ -958,8 +928,7 @@ fn (mut t Tokenizer) script_data_escaped_dash_dash_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		return [replacement_token]
 	}
 
@@ -1079,7 +1048,7 @@ fn (mut t Tokenizer) script_data_double_escape_start_state() []Token {
 	}
 
 	if t.char in whitespace || t.char in [`/`, `>`] {
-		if builder_contents(t.buffer) == 'script' {
+		if t.buffer.bytestr() == 'script' {
 			t.state = .script_data_double_escaped
 			return t.script_data_double_escaped_state()
 		} else {
@@ -1099,12 +1068,9 @@ fn (mut t Tokenizer) script_data_double_escape_start_state() []Token {
 // script_data_double_escaped_state follows the spec 13.2.5.27 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-double-escaped-state
 fn (mut t Tokenizer) script_data_double_escaped_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in script html comment like text.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_script_comment_like_text
-			mssg: mssg__eof_in_script_comment_like_text
+			mssg: ParseError.eof_in_script_comment_like_text.str()
 		}]
 	}
 
@@ -1119,8 +1085,7 @@ fn (mut t Tokenizer) script_data_double_escaped_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		return [replacement_token]
 	}
 
@@ -1130,12 +1095,9 @@ fn (mut t Tokenizer) script_data_double_escaped_state() []Token {
 // script_data_double_escaped_dash_state follows the spec 13.2.5.28 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-double-escaped-dash-state
 fn (mut t Tokenizer) script_data_double_escaped_dash_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in script html comment like text.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_script_comment_like_text
-			mssg: mssg__eof_in_script_comment_like_text
+			mssg: ParseError.eof_in_script_comment_like_text.str()
 		}]
 	}
 
@@ -1150,8 +1112,7 @@ fn (mut t Tokenizer) script_data_double_escaped_dash_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		t.state = .script_data_double_escaped
 		return [replacement_token]
 	}
@@ -1163,12 +1124,9 @@ fn (mut t Tokenizer) script_data_double_escaped_dash_state() []Token {
 // script_data_double_escaped_dash_dash_state follows the spec 13.2.5.29 at https://html.spec.whatwg.org/multipage/parsing.html#script-data-double-escaped-dash-dash-state
 fn (mut t Tokenizer) script_data_double_escaped_dash_dash_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in script html comment like text.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_script_comment_like_text
-			mssg: mssg__eof_in_script_comment_like_text
+			mssg: ParseError.eof_in_script_comment_like_text.str()
 		}]
 	}
 
@@ -1182,8 +1140,7 @@ fn (mut t Tokenizer) script_data_double_escaped_dash_dash_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		t.state = .script_data_double_escaped
 		return [replacement_token]
 	}
@@ -1226,7 +1183,7 @@ fn (mut t Tokenizer) script_data_double_escape_end_state() []Token {
 	}
 
 	if t.char in whitespace || t.char in [`/`, `>`] {
-		if builder_contents(t.buffer) == 'script' {
+		if t.buffer.bytestr() == 'script' {
 			t.state = .script_data_escaped
 			return t.script_data_escaped_state()
 		} else {
@@ -1262,8 +1219,7 @@ fn (mut t Tokenizer) before_attribute_name_state() []Token {
 	}
 
 	if t.char == `=` {
-		// parse error
-		println('Unexpected equals sign before attribute name.')
+		println(ParseError.unexpected_equals_sign_before_attribute_name)
 		mut tok := &(t.token as TagToken)
 		tok.attributes << Attribute{}
 		mut attr := &(tok.attributes[tok.attributes.len - 1])
@@ -1315,16 +1271,14 @@ fn (mut t Tokenizer) attribute_name_state() []Token {
 	// }
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as TagToken)
 		mut attr := &(tok.attributes[tok.attributes.len-1])
 		attr.name.write_rune(0xfffd)
 	}
 
 	if t.char in [`'`, `"`, `<`] {
-		// parse error
-		println('Unexpected character in attribute name.')
+		println(ParseError.unexpected_character_in_attribute_name)
 		return anything_else()
 	}
 
@@ -1334,12 +1288,9 @@ fn (mut t Tokenizer) attribute_name_state() []Token {
 // after_attribute_name_state follows the spec 13.2.5.34 at https://html.spec.whatwg.org/multipage/parsing.html#after-attribute-name-state
 fn (mut t Tokenizer) after_attribute_name_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in tag.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_tag
-			mssg: mssg__eof_in_tag
+			mssg: ParseError.eof_in_tag.str()
 		}]
 	}
 
@@ -1396,8 +1347,7 @@ fn (mut t Tokenizer) before_attribute_value_state() []Token {
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Missing attribute value.')
+		println(ParseError.missing_attribute_value)
 		t.state = .data
 		return [t.token]
 	}
@@ -1408,12 +1358,9 @@ fn (mut t Tokenizer) before_attribute_value_state() []Token {
 // attribute_value_double_quoted_state follows the spec 13.2.5.36 at https://html.spec.whatwg.org/multipage/parsing.html#attribute-value-(double-quoted)-state
 fn (mut t Tokenizer) attribute_value_double_quoted_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in tag.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_tag
-			mssg: mssg__eof_in_tag
+			mssg: ParseError.eof_in_tag.str()
 		}]
 	}
 
@@ -1429,8 +1376,7 @@ fn (mut t Tokenizer) attribute_value_double_quoted_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as TagToken)
 		mut attr := &(tok.attributes[tok.attributes.len-1])
 		attr.value.write_rune(0xfffd)
@@ -1445,12 +1391,9 @@ fn (mut t Tokenizer) attribute_value_double_quoted_state() []Token {
 // attribute_value_single_quoted_state follows the spec 13.2.5.37 at https://html.spec.whatwg.org/multipage/parsing.html#attribute-value-(single-quoted)-state
 fn (mut t Tokenizer) attribute_value_single_quoted_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in tag.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_tag
-			mssg: mssg__eof_in_tag
+			mssg: ParseError.eof_in_tag.str()
 		}]
 	}
 
@@ -1466,8 +1409,7 @@ fn (mut t Tokenizer) attribute_value_single_quoted_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as TagToken)
 		mut attr := &(tok.attributes[tok.attributes.len-1])
 		attr.value.write_rune(0xfffd)
@@ -1489,12 +1431,9 @@ fn (mut t Tokenizer) attribute_value_unquoted_state() []Token {
 	}
 
 	t.consume() or {
-		// parse error
-		println('EOF in tag.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_tag
-			mssg: mssg__eof_in_tag
+			mssg: ParseError.eof_in_tag.str()
 		}]
 	}
 
@@ -1515,16 +1454,14 @@ fn (mut t Tokenizer) attribute_value_unquoted_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as TagToken)
 		mut attr := &(tok.attributes[tok.attributes.len-1])
 		attr.value.write_rune(0xfffd)
 	}
 
 	if t.char in [`'`, `"`, `=`, `<`, `\``] {
-		// parse error
-		println('Unexpected character in unquoted attribute value.')
+		println(ParseError.unexpected_character_in_unquoted_attribute_value)
 		return anything_else()
 	}
 
@@ -1534,12 +1471,9 @@ fn (mut t Tokenizer) attribute_value_unquoted_state() []Token {
 // after_attribute_value_quoted_state follows the spec 13.2.5.39 at https://html.spec.whatwg.org/multipage/parsing.html#after-attribute-value-(quoted)-state
 fn (mut t Tokenizer) after_attribute_value_quoted_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in tag.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_tag
-			mssg: mssg__eof_in_tag
+			mssg: ParseError.eof_in_tag.str()
 		}]
 	}
 
@@ -1558,8 +1492,7 @@ fn (mut t Tokenizer) after_attribute_value_quoted_state() []Token {
 		return [t.token]
 	}
 
-	// parse error
-	println('Missing whitespace between attributes.')
+	println(ParseError.missing_whitespace_between_attributes)
 	t.reconsume()
 	t.state = .before_attribute_name
 	return t.before_attribute_name_state()
@@ -1568,12 +1501,9 @@ fn (mut t Tokenizer) after_attribute_value_quoted_state() []Token {
 // self_closing_start_tag_state follows the spec 13.2.5.40 at https://html.spec.whatwg.org/multipage/parsing.html#self-closing-start-tag-state
 fn (mut t Tokenizer) self_closing_start_tag_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in tag.')
 		t.state = .eof
 		return [EOFToken{
-			name: name__eof_in_tag
-			mssg: mssg__eof_in_tag
+			mssg: ParseError.eof_in_tag.str()
 		}]
 	}
 
@@ -1584,8 +1514,7 @@ fn (mut t Tokenizer) self_closing_start_tag_state() []Token {
 		return [t.token]
 	}
 
-	// parse error
-	println('Unexpected solidus in tag.')
+	println(ParseError.unexpected_solidus_in_tag)
 	t.reconsume()
 	t.state = .before_attribute_name
 	return t.before_attribute_name_state()
@@ -1604,8 +1533,7 @@ fn (mut t Tokenizer) bogus_comment_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as CommentToken)
 		tok.data.write_rune(0xfffd)
 	}
@@ -1640,8 +1568,7 @@ fn (mut t Tokenizer) markup_declaration_open_state() []Token {
 		return t.bogus_comment_state()
 	}
 
-	// parse error
-	println('Incorrectly opened comment.')
+	println(ParseError.incorrectly_opened_comment)
 	t.token = CommentToken{}
 	t.state = .bogus_comment
 	return t.bogus_comment_state()
@@ -1665,8 +1592,7 @@ fn (mut t Tokenizer) comment_start_state() []Token {
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Abrupt closing of empty comment.')
+		println(ParseError.abrupt_closing_of_empty_comment)
 		t.state = .data
 		return [t.token]
 	}
@@ -1677,12 +1603,9 @@ fn (mut t Tokenizer) comment_start_state() []Token {
 // comment_start_dash_state follows the spec 13.2.5.44 at https://html.spec.whatwg.org/multipage/parsing.html#comment-start-dash-state
 fn (mut t Tokenizer) comment_start_dash_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in comment.')
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_comment
-			mssg: mssg__eof_in_comment
+			mssg: ParseError.eof_in_comment.str()
 		}]
 	}
 
@@ -1692,8 +1615,7 @@ fn (mut t Tokenizer) comment_start_dash_state() []Token {
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Abrupt closing of empty comment.')
+		println(ParseError.abrupt_closing_of_empty_comment)
 		t.state = .data
 		return [t.token]
 	}
@@ -1708,12 +1630,9 @@ fn (mut t Tokenizer) comment_start_dash_state() []Token {
 // comment_state follows the spec 13.2.5.45 at https://html.spec.whatwg.org/multipage/parsing.html#comment-state
 fn (mut t Tokenizer) comment_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in comment.')
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_comment
-			mssg: mssg__eof_in_comment
+			mssg: ParseError.eof_in_comment.str()
 		}]
 	}
 
@@ -1730,8 +1649,7 @@ fn (mut t Tokenizer) comment_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as CommentToken)
 		tok.data.write_rune(0xfffd)
 		return t.comment_state()
@@ -1826,8 +1744,7 @@ fn (mut t Tokenizer) comment_less_than_sign_bang_dash_dash_state() []Token {
 		return gteof()
 	}
 
-	// parse error
-	println('Nested comment.')
+	println(ParseError.nested_comment)
 	t.reconsume()
 	t.state = .comment_end
 	return t.comment_end_state()
@@ -1836,12 +1753,9 @@ fn (mut t Tokenizer) comment_less_than_sign_bang_dash_dash_state() []Token {
 // comment_end_dash_state follows the spec 13.2.5.50 at https://html.spec.whatwg.org/multipage/parsing.html#comment-end-dash-state
 fn (mut t Tokenizer) comment_end_dash_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in comment.')
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_comment
-			mssg: mssg__eof_in_comment
+			mssg: ParseError.eof_in_comment.str()
 		}]
 	}
 
@@ -1860,12 +1774,9 @@ fn (mut t Tokenizer) comment_end_dash_state() []Token {
 // comment_end_state follows the spec 13.2.5.51 at https://html.spec.whatwg.org/multipage/parsing.html#comment-end-state
 fn (mut t Tokenizer) comment_end_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in comment.')
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_comment
-			mssg: mssg__eof_in_comment
+			mssg: ParseError.eof_in_comment.str()
 		}]
 	}
 
@@ -1895,18 +1806,14 @@ fn (mut t Tokenizer) comment_end_state() []Token {
 // comment_end_bang_state follows the spec 13.2.5.52 at https://html.spec.whatwg.org/multipage/parsing.html#comment-end-bang-state
 fn (mut t Tokenizer) comment_end_bang_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in comment.')
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_comment
-			mssg: mssg__eof_in_comment
+			mssg: ParseError.eof_in_comment.str()
 		}]
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Incorrectly closed comment.')
+		println(ParseError.incorrectly_closed_comment)
 		t.state = .data
 		return [t.token]
 	}
@@ -1921,15 +1828,12 @@ fn (mut t Tokenizer) comment_end_bang_state() []Token {
 // doctype_state follows the spec 13.2.5.53 at https://html.spec.whatwg.org/multipage/parsing.html#doctype-state
 fn (mut t Tokenizer) doctype_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		t.token = DoctypeToken{}
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 	
@@ -1944,8 +1848,7 @@ fn (mut t Tokenizer) doctype_state() []Token {
 		return t.before_doctype_name_state()
 	}
 
-	// parse error
-	println('Missing whitespace before doctype name.')
+	println(ParseError.missing_whitespace_before_doctype_name)
 	t.reconsume()
 	t.state = .before_doctype_name
 	return t.before_doctype_name_state()
@@ -1954,15 +1857,12 @@ fn (mut t Tokenizer) doctype_state() []Token {
 // before_doctype_name_state follows the spec 13.2.5.54 at https://html.spec.whatwg.org/multipage/parsing.html#before-doctype-name-state
 fn (mut t Tokenizer) before_doctype_name_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		t.token = DoctypeToken{}
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -1971,8 +1871,7 @@ fn (mut t Tokenizer) before_doctype_name_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		t.token = DoctypeToken{}
 		mut tok := &(t.token as DoctypeToken)
 		tok.name = new_builder(50)
@@ -1982,8 +1881,7 @@ fn (mut t Tokenizer) before_doctype_name_state() []Token {
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Missing DOCTYPE name.')
+		println(ParseError.missing_doctype_name)
 		t.token = DoctypeToken{}
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
@@ -2002,14 +1900,11 @@ fn (mut t Tokenizer) before_doctype_name_state() []Token {
 // doctype_name_state follows the spec 13.2.5.55 at https://html.spec.whatwg.org/multipage/parsing.html#doctype-name-state
 fn (mut t Tokenizer) doctype_name_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2024,8 +1919,7 @@ fn (mut t Tokenizer) doctype_name_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as DoctypeToken)
 		tok.name.write_rune(0xfffd)
 		return t.doctype_name_state()
@@ -2039,14 +1933,11 @@ fn (mut t Tokenizer) doctype_name_state() []Token {
 // after_doctype_name_state follows the spec 13.2.5.56 at https://html.spec.whatwg.org/multipage/parsing.html#after-doctype-name-state
 fn (mut t Tokenizer) after_doctype_name_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2069,8 +1960,7 @@ fn (mut t Tokenizer) after_doctype_name_state() []Token {
 		return t.after_doctype_system_keyword_state()
 	}
 
-	// parse error
-	println('Invalid character sequence after doctype name.')
+	println(ParseError.invalid_character_sequence_after_doctype_name)
 	mut tok := &(t.token as DoctypeToken)
 	tok.force_quirks = true
 	t.reconsume()
@@ -2081,14 +1971,11 @@ fn (mut t Tokenizer) after_doctype_name_state() []Token {
 // after_doctype_public_keyword_state follows the spec 13.2.5.57 at https://html.spec.whatwg.org/multipage/parsing.html#after-doctype-public-keyword-state
 fn (mut t Tokenizer) after_doctype_public_keyword_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2098,8 +1985,7 @@ fn (mut t Tokenizer) after_doctype_public_keyword_state() []Token {
 	}
 
 	if t.char == `"` {
-		// parse error
-		println('Missing whitespace after doctype public keyword.')
+		println(ParseError.missing_whitespace_after_doctype_public_keyword)
 		mut tok := &(t.token as DoctypeToken)
 		tok.public_identifier = new_builder(50)
 		t.state = .doctype_public_identifier_double_quoted
@@ -2107,8 +1993,7 @@ fn (mut t Tokenizer) after_doctype_public_keyword_state() []Token {
 	}
 
 	if t.char == `'` {
-		// parse error
-		println('Missing whitespace after doctype public keyword.')
+		println(ParseError.missing_whitespace_after_doctype_public_keyword)
 		mut tok := &(t.token as DoctypeToken)
 		tok.public_identifier = new_builder(50)
 		t.state = .doctype_public_identifier_single_quoted
@@ -2116,16 +2001,14 @@ fn (mut t Tokenizer) after_doctype_public_keyword_state() []Token {
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Missing doctype public identifier.')
+		println(ParseError.missing_doctype_public_identifier)
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .data
 		return [t.token]
 	}
 
-	// parse error
-	println('Missing quote before doctype public identifier.')
+	println(ParseError.missing_quote_before_doctype_public_identifier)
 	mut tok := &(t.token as DoctypeToken)
 	tok.force_quirks = true
 	t.reconsume()
@@ -2136,14 +2019,11 @@ fn (mut t Tokenizer) after_doctype_public_keyword_state() []Token {
 // before_doctype_public_identifier_state follows the spec 13.2.5.58 at https://html.spec.whatwg.org/multipage/parsing.html#before-doctype-public-identifier-state
 fn (mut t Tokenizer) before_doctype_public_identifier_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2166,16 +2046,14 @@ fn (mut t Tokenizer) before_doctype_public_identifier_state() []Token {
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Missing doctype public identifier.')
+		println(ParseError.missing_doctype_public_identifier)
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .data
 		return [t.token]
 	}
 
-	// parse error
-	println('Missing quote before doctype public identifier.')
+	println(ParseError.missing_quote_before_doctype_public_identifier)
 	mut tok := &(t.token as DoctypeToken)
 	tok.force_quirks = true
 	t.reconsume()
@@ -2186,14 +2064,11 @@ fn (mut t Tokenizer) before_doctype_public_identifier_state() []Token {
 // doctype_public_identifier_double_quoted_state follows the spec 13.2.5.59 at https://html.spec.whatwg.org/multipage/parsing.html#doctype-public-identifier-(double-quoted)-state
 fn (mut t Tokenizer) doctype_public_identifier_double_quoted_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2203,16 +2078,14 @@ fn (mut t Tokenizer) doctype_public_identifier_double_quoted_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as DoctypeToken)
 		tok.public_identifier.write_rune(0xfffd)
 		return t.doctype_public_identifier_double_quoted_state()
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Abrubt doctype public identifier.')
+		println(ParseError.abrupt_doctype_public_identifier)
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .data
@@ -2227,14 +2100,11 @@ fn (mut t Tokenizer) doctype_public_identifier_double_quoted_state() []Token {
 // doctype_public_identifier_single_quoted_state follows the spec 13.2.5.60 at https://html.spec.whatwg.org/multipage/parsing.html#doctype-public-identifier-(single-quoted)-state
 fn (mut t Tokenizer) doctype_public_identifier_single_quoted_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2244,16 +2114,14 @@ fn (mut t Tokenizer) doctype_public_identifier_single_quoted_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as DoctypeToken)
 		tok.public_identifier.write_rune(0xfffd)
 		return t.doctype_public_identifier_single_quoted_state()
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Abrubt doctype public identifier.')
+		println(ParseError.abrupt_doctype_public_identifier)
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .data
@@ -2268,14 +2136,11 @@ fn (mut t Tokenizer) doctype_public_identifier_single_quoted_state() []Token {
 // after_doctype_public_identifier_state follows the spec 13.2.5.61 at https://html.spec.whatwg.org/multipage/parsing.html#after-doctype-public-identifier-state
 fn (mut t Tokenizer) after_doctype_public_identifier_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2290,8 +2155,7 @@ fn (mut t Tokenizer) after_doctype_public_identifier_state() []Token {
 	}
 
 	if t.char == `"` {
-		// parse error
-		println('Missing whitespace between doctype public and system identifiers.')
+		println(ParseError.missing_whitespace_between_doctype_public_and_system_identifiers)
 		mut tok := &(t.token as DoctypeToken)
 		tok.system_identifier = new_builder(50)
 		t.state = .doctype_system_identifier_double_quoted
@@ -2299,16 +2163,14 @@ fn (mut t Tokenizer) after_doctype_public_identifier_state() []Token {
 	}
 
 	if t.char == `'` {
-		// parse error
-		println('Missing whitespace between doctype public and system identifiers.')
+		println(ParseError.missing_whitespace_between_doctype_public_and_system_identifiers)
 		mut tok := &(t.token as DoctypeToken)
 		tok.system_identifier = new_builder(50)
 		t.state = .doctype_system_identifier_single_quoted
 		return t.doctype_system_identifier_single_quoted_state()
 	}
 
-	// parse error
-	println('Missing quote before doctype system identifier.')
+	println(ParseError.missing_quote_before_doctype_system_identifier)
 	mut tok := &(t.token as DoctypeToken)
 	tok.force_quirks = true
 	t.reconsume()
@@ -2319,14 +2181,11 @@ fn (mut t Tokenizer) after_doctype_public_identifier_state() []Token {
 // between_doctype_public_and_system_identifiers_state follows the spec 13.2.5.62 at https://html.spec.whatwg.org/multipage/parsing.html#between-doctype-public-and-system-identifiers-state
 fn (mut t Tokenizer) between_doctype_public_and_system_identifiers_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2353,8 +2212,7 @@ fn (mut t Tokenizer) between_doctype_public_and_system_identifiers_state() []Tok
 		return t.doctype_system_identifier_single_quoted_state()
 	}
 
-	// parse error
-	println('Missing quote before doctype system identifier.')
+	println(ParseError.missing_quote_before_doctype_system_identifier)
 	mut tok := &(t.token as DoctypeToken)
 	tok.force_quirks = true
 	t.reconsume()
@@ -2365,14 +2223,11 @@ fn (mut t Tokenizer) between_doctype_public_and_system_identifiers_state() []Tok
 // after_doctype_system_keyword_state follows the spec 13.2.5.63 at https://html.spec.whatwg.org/multipage/parsing.html#after-doctype-system-keyword-state
 fn (mut t Tokenizer) after_doctype_system_keyword_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2382,8 +2237,7 @@ fn (mut t Tokenizer) after_doctype_system_keyword_state() []Token {
 	}
 
 	if t.char == `"` {
-		// parse error
-		println('Missing whitespace between system keyword and system identifier.')
+		println(ParseError.missing_whitespace_between_doctype_system_keyword_and_system_identifier)
 		mut tok := &(t.token as DoctypeToken)
 		tok.system_identifier = new_builder(50)
 		t.state = .doctype_system_identifier_double_quoted
@@ -2391,8 +2245,7 @@ fn (mut t Tokenizer) after_doctype_system_keyword_state() []Token {
 	}
 
 	if t.char == `'` {
-		// parse error
-		println('Missing whitespace between system keyword and system identifier.')
+		println(ParseError.missing_whitespace_between_doctype_system_keyword_and_system_identifier)
 		mut tok := &(t.token as DoctypeToken)
 		tok.system_identifier = new_builder(50)
 		t.state = .doctype_system_identifier_single_quoted
@@ -2400,16 +2253,14 @@ fn (mut t Tokenizer) after_doctype_system_keyword_state() []Token {
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Missing doctype system identifier.')
+		println(ParseError.missing_doctype_system_identifier)
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .data
 		return [t.token]
 	}
 
-	// parse error
-	println('Missing quote before doctype system identifier.')
+	println(ParseError.missing_quote_before_doctype_system_identifier)
 	mut tok := &(t.token as DoctypeToken)
 	tok.force_quirks = true
 	t.reconsume()
@@ -2420,14 +2271,11 @@ fn (mut t Tokenizer) after_doctype_system_keyword_state() []Token {
 // before_doctype_system_identifier_state follows the spec 13.2.5.64 at https://html.spec.whatwg.org/multipage/parsing.html#before-doctype-system-identifier-state
 fn (mut t Tokenizer) before_doctype_system_identifier_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2450,16 +2298,14 @@ fn (mut t Tokenizer) before_doctype_system_identifier_state() []Token {
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Missing doctype system identifier.')
+		println(ParseError.missing_doctype_system_identifier)
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .data
 		return [t.token]
 	}
 
-	// parse error
-	println('Missing quote before doctype system identifier.')
+	println(ParseError.missing_quote_before_doctype_system_identifier)
 	mut tok := &(t.token as DoctypeToken)
 	tok.force_quirks = true
 	t.reconsume()
@@ -2470,14 +2316,11 @@ fn (mut t Tokenizer) before_doctype_system_identifier_state() []Token {
 // doctype_system_identifier_double_quoted_state follows the spec 13.2.5.65 at https://html.spec.whatwg.org/multipage/parsing.html#doctype-system-identifier-(double-quoted)-state
 fn (mut t Tokenizer) doctype_system_identifier_double_quoted_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2487,16 +2330,14 @@ fn (mut t Tokenizer) doctype_system_identifier_double_quoted_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as DoctypeToken)
 		tok.system_identifier.write_rune(0xfffd)
 		return t.doctype_system_identifier_double_quoted_state()
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Abrubt doctype system identifier.')
+		println(ParseError.abrupt_doctype_system_identifier)
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .data
@@ -2511,14 +2352,11 @@ fn (mut t Tokenizer) doctype_system_identifier_double_quoted_state() []Token {
 // doctype_system_identifier_single_quoted_state follows the spec 13.2.5.66 at https://html.spec.whatwg.org/multipage/parsing.html#doctype-system-identifier-(single-quoted)-state
 fn (mut t Tokenizer) doctype_system_identifier_single_quoted_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2528,16 +2366,14 @@ fn (mut t Tokenizer) doctype_system_identifier_single_quoted_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as DoctypeToken)
 		tok.system_identifier.write_rune(0xfffd)
 		return t.doctype_system_identifier_single_quoted_state()
 	}
 
 	if t.char == `>` {
-		// parse error
-		println('Abrubt doctype system identifier.')
+		println(ParseError.abrupt_doctype_system_identifier)
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .data
@@ -2552,14 +2388,11 @@ fn (mut t Tokenizer) doctype_system_identifier_single_quoted_state() []Token {
 // after_doctype_system_identifier_state follows the spec 13.2.5.67 at https://html.spec.whatwg.org/multipage/parsing.html#after-doctype-system-identifier-state
 fn (mut t Tokenizer) after_doctype_system_identifier_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in DOCTYPE.')
 		mut tok := &(t.token as DoctypeToken)
 		tok.force_quirks = true
 		t.state = .eof
 		return [t.token, EOFToken{
-			name: name__eof_in_doctype
-			mssg: mssg__eof_in_doctype
+			mssg: ParseError.eof_in_doctype.str()
 		}]
 	}
 
@@ -2572,8 +2405,7 @@ fn (mut t Tokenizer) after_doctype_system_identifier_state() []Token {
 		return [t.token]
 	}
 
-	// parse error
-	println('Unexpected character after doctype system identifier.')
+	println(ParseError.unexpected_character_after_doctype_system_identifier)
 	t.reconsume()
 	t.state = .bogus_doctype
 	return t.bogus_doctype_state()
@@ -2592,8 +2424,7 @@ fn (mut t Tokenizer) bogus_doctype_state() []Token {
 	}
 
 	if t.char == null {
-		// parse error
-		println('Unexpected null character.')
+		println(ParseError.unexpected_null_character)
 		return t.bogus_doctype_state()
 	}
 
@@ -2603,8 +2434,7 @@ fn (mut t Tokenizer) bogus_doctype_state() []Token {
 // cdata_section_state follows the spec 13.2.5.69 at https://html.spec.whatwg.org/multipage/parsing.html#cdata-section-state
 fn (mut t Tokenizer) cdata_section_state() []Token {
 	t.consume() or {
-		// parse error
-		println('EOF in CDATA.')
+		println(ParseError.eof_in_cdata)
 		t.state = .eof
 		return [EOFToken{}]
 	}
@@ -2715,9 +2545,8 @@ fn (mut t Tokenizer) named_character_reference_state() []Token {
 	}
 
 	if t.char in whitespace {
-		// println
-		println('Missing semicolon after character reference parse error.')
-		t.char_ref_code = named_char_ref[builder_contents(char_ref)] or {
+		println(ParseError.missing_semicolon_after_character_reference)
+		t.char_ref_code = named_char_ref[char_ref.bytestr()] or {
 			t.state = .ambiguous_ampersand
 			return t.ambiguous_ampersand_state()
 		}
@@ -2730,7 +2559,7 @@ fn (mut t Tokenizer) named_character_reference_state() []Token {
 
 	if t.char == `;` {
 		char_ref.write_rune(`;`)
-		t.char_ref_code = named_char_ref[builder_contents(char_ref)] or {
+		t.char_ref_code = named_char_ref[char_ref.bytestr()] or {
 			t.state = .ambiguous_ampersand
 			return t.ambiguous_ampersand_state()
 		}
@@ -2773,8 +2602,7 @@ fn (mut t Tokenizer) ambiguous_ampersand_state() []Token {
 	}
 
 	if t.char == `;` {
-		// parse error
-		println('Unknown named character reference.')
+		println(ParseError.unknown_named_character_reference)
 		// t.reconsume()
 		// t.state = t.return_state
 		// t.return_state = .@none
@@ -2808,8 +2636,7 @@ fn (mut t Tokenizer) numeric_character_reference_state() []Token {
 // hexadecimal_character_reference_start_state follows the spec 13.2.5.76 at https://html.spec.whatwg.org/multipage/parsing.html#hexadecimal-character-reference-start-state
 fn (mut t Tokenizer) hexadecimal_character_reference_start_state() []Token {
 	anything_else := fn [mut t] () []Token {
-		// parse error
-		println('Absence of digits in numeric character reference')
+		println(ParseError.absence_of_digits_in_numeric_character_reference)
 		toks := t.flush_codepoints()
 		t.reconsume()
 		t.state = t.return_state
@@ -2833,8 +2660,7 @@ fn (mut t Tokenizer) hexadecimal_character_reference_start_state() []Token {
 // decimal_character_reference_start_state follows the spec 13.2.5.77 at https://html.spec.whatwg.org/multipage/parsing.html#decimal-character-reference-start-state
 fn (mut t Tokenizer) decimal_character_reference_start_state() []Token {
 	anything_else := fn [mut t] () []Token {
-		// parse error
-		println('Absence of digits in numeric character reference')
+		println(ParseError.absence_of_digits_in_numeric_character_reference)
 		toks := t.flush_codepoints()
 		t.reconsume()
 		t.state = t.return_state
@@ -2858,8 +2684,7 @@ fn (mut t Tokenizer) decimal_character_reference_start_state() []Token {
 // hexadecimal_character_reference_state follows the spec 13.2.5.78 at https://html.spec.whatwg.org/multipage/parsing.html#hexadecimal-character-reference-state
 fn (mut t Tokenizer) hexadecimal_character_reference_state() []Token {
 	anything_else := fn [mut t] () []Token {
-		// parse error
-		println('Missing semicolor after character reference.')
+		println(ParseError.missing_semicolon_after_character_reference)
 		t.reconsume()
 		t.state = .numeric_character_reference
 		return t.numeric_character_reference_state()
@@ -2898,8 +2723,7 @@ fn (mut t Tokenizer) hexadecimal_character_reference_state() []Token {
 // decimal_character_reference_state follows the spec 13.2.5.79 at https://html.spec.whatwg.org/multipage/parsing.html#decimal-character-reference-state
 fn (mut t Tokenizer) decimal_character_reference_state() []Token {
 	anything_else := fn [mut t] () []Token {
-		// parse error
-		println('Missing semicolon after character reference parse error.')
+		println(ParseError.missing_semicolon_after_character_reference)
 		t.reconsume()
 		t.state = .numeric_character_reference_end
 		return t.numeric_character_reference_end_state()
@@ -2926,23 +2750,18 @@ fn (mut t Tokenizer) decimal_character_reference_state() []Token {
 // numeric_character_reference_end_state follows the spec 13.2.5.80 at https://html.spec.whatwg.org/multipage/parsing.html#numeric-character-reference-end-state
 fn (mut t Tokenizer) numeric_character_reference_end_state() []Token {
 	if t.char_ref_code == 0x00 {
-		// parse error
-		println('Null character parse error.')
+		println(ParseError.null_character_reference)
 		t.char_ref_code = 0xfffd
 	} else if t.char_ref_code > 0x10ffff {
-		// parse error
-		println('Character reference outside unicode range.')
+		println(ParseError.character_reference_outside_unicode_range)
 		t.char_ref_code = 0xfffd
 	} else if is_surrogate(t.char_ref_code) {
-		// parser error
-		println('Surrogate character reference.')
+		println(ParseError.surrogate_character_reference)
 		t.char_ref_code = 0xfffd
 	} else if is_noncharacter(t.char_ref_code) {
-		// parse error
-		println('Noncharacter character reference.')
+		println(ParseError.noncharacter_character_reference)
 	} else if t.char_ref_code == 0x0d || (is_control(t.char_ref_code) && t.char_ref_code !in whitespace) {
-		// parse error
-		println('Control character reference.')
+		println(ParseError.control_character_reference)
 		table := {
 			rune(0x80): rune(0x20ac),
 			0x82: 0x201a, 0x83: 0x0192, 0x84: 0x201e, 0x85: 0x2026,
