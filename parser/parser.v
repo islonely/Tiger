@@ -115,6 +115,7 @@ mut:
 	current_token   Token
 	next_token      Token
 	reconsume_token bool
+	scripting bool = true
 }
 
 // Parser.from_string instantiates a Parser from the source string.
@@ -141,9 +142,9 @@ pub fn Parser.from_url(url string) !Parser {
 	if res.status_code != 200 {
 		return error('URL get request returned status code ${res.status_code}: ${res.status_msg}')
 	}
-	mut parser := Parser.from_runes(res.body.runes())
-	parser.doc.base_uri = url
-	return parser
+	mut p := Parser.from_runes(res.body.runes())
+	p.doc.base_uri = url
+	return p
 }
 
 // parse parses the tokens emitted from the Tokenizer and returns
@@ -222,8 +223,6 @@ fn (mut p Parser) before_html_insertion_mode() {
 			if p.current_token.is_start {
 				if p.current_token.name() == 'html' {
 					mut child := dom.HTMLHtmlElement.new(p.doc)
-					//////////////////////////////////////////////////////////
-					println(dom.NodeInterface(child).node_name.len)
 					p.doc.append_child(child)
 					p.open_elems << child
 					p.insertion_mode = .before_head
@@ -344,9 +343,7 @@ fn (mut p Parser) before_head_insertion_mode() {
 			anything_else()
 		}
 		CommentToken {
-			mut child := dom.CommentNode.new(p.doc, p.current_token.data())
-			mut last := p.open_elems.last()
-			last.append_child(child)
+			p.insert_comment()
 		}
 		DoctypeToken {
 			put(
@@ -366,6 +363,7 @@ fn (mut p Parser) before_head_insertion_mode() {
 					mut last := p.open_elems.last()
 					p.doc.head = child
 					last.append_child(child)
+					p.open_elems << child
 					p.insertion_mode = .in_head
 					return
 				}
@@ -390,4 +388,202 @@ fn (mut p Parser) before_head_insertion_mode() {
 	}
 }
 
+// in_head_insertion_mode
+// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead
+fn (mut p Parser) in_head_insertion_mode() {
+	anything_else := fn [mut p] () {
+
+	}
+
+	match mut p.current_token {
+		CharacterToken {
+			if p.current_token in parser.whitespace {
+				p.insert_text(p.current_token.str())
+			}
+		}
+		CommentToken {
+			p.insert_comment()
+		}
+		DoctypeToken {
+			put(
+				typ: .notice
+				text: 'Invalid DOCTYPE token. Ignoring token.'
+			)
+		}
+		TagToken {
+			if p.current_token.is_start {
+				mut last_opened_elem := p.open_elems.last()
+				tag_name := p.current_token.name()
+				if tag_name == 'html' {
+					p.in_body_insertion_mode()
+					return
+				} else if tag_name in ['base', 'basefont', 'bgsound', 'link'] {
+					mut child := match tag_name {
+						'base' {
+							&dom.NodeInterface(dom.HTMLBaseElement.new(p.doc))
+						}
+						'basefont' {
+							&dom.NodeInterface(&dom.HTMLElement{
+								owner_document: p.doc
+								node_name: 'basefont'
+							})
+						}
+						'bgsound' {
+							// todo: replace with appropriate element
+							&dom.NodeInterface(&dom.HTMLElement{
+								owner_document: p.doc
+								node_name: 'bgsound'
+							})
+						}
+						'link' {
+							&dom.NodeInterface(dom.HTMLLinkElement.new(p.doc))
+						}
+						else {
+							put(
+								typ: .fatal
+								text: 'Unexpected tag name in in_head_insertion_mode > TagToken > "${tag_name}"'
+							)
+							exit(1)
+						}
+					}
+					last_opened_elem.append_child(child)
+					// Do not add to open elems per spec: "immediately pop
+					// the current node off the stack of open elements."
+					// We have not pushed it yet; no pop is needed.
+					return
+				} else if tag_name == 'meta' {
+					mut child := dom.HTMLMetaElement.new(p.doc)
+					last_opened_elem.append_child(child)
+					// Do not add to open elems per spec: "immediately pop
+					// the current node off the stack of open elements."
+					// We have not pushed it yet; no pop is needed.
+
+					// todo: implement substeps 1 and 2 from
+					// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead
+				} else if tag_name == 'title' {
+					// https://html.spec.whatwg.org/multipage/parsing.html#generic-rcdata-element-parsing-algorithm
+					mut child := dom.HTMLElement{
+						owner_document: p.doc
+						local_name: 'title'
+					}
+					last_opened_elem.append_child(child)
+					p.open_elems << child
+					p.tokenizer.state = .rcdata
+					p.original_insertion_mode = p.insertion_mode
+					p.insertion_mode = .text
+					return
+				} else if (tag_name == 'noscript' && p.doc.scripting) || tag_name in ['noframes', 'style'] {
+					mut child := match tag_name {
+						'noscript' {
+							&dom.NodeInterface(&dom.HTMLElement{
+								owner_document: p.doc
+								local_name: 'noscript'
+							})
+						}
+						'noframes' {
+							&dom.NodeInterface(&dom.HTMLElement{
+								owner_document: p.doc
+								local_name: 'noframes'
+							})
+						}
+						'style' {
+							&dom.NodeInterface(dom.HTMLStyleElement.new(p.doc))
+						}
+						else {
+							put(
+								typ: .fatal
+								text: 'Unexpected tag name in in_head_insertion_mode > TagToken > "${tag_name}"'
+							)
+							exit(1)
+						}
+					}
+					last_opened_elem.append_child(child)
+					p.open_elems << child
+					p.tokenizer.state = .rawtext
+					p.original_insertion_mode = p.insertion_mode
+					p.insertion_mode = .text
+					return
+				} else if tag_name == 'noscript' && !p.doc.scripting {
+					mut child := &dom.HTMLElement{
+						owner_document: p.doc
+						local_name: 'noscript'
+					}
+					last_opened_elem.append_child(child)
+					p.insertion_mode = .in_head_no_script
+					return
+				} else if tag_name == 'script' {
+					mut child := dom.HTMLScriptElement.new(p.doc)
+					child.namespace_uri = dom.namespaces[dom.NamespaceURI.html]
+					last_opened_elem.append_child(child)
+					p.open_elems << child
+				}
+			}
+		}
+		else {}
+	}
+}
+
 fn (mut p Parser) in_body_insertion_mode() {}
+
+// insert_comment adds a comment to the last opened element (and always assumes
+// an element is open).
+// https://html.spec.whatwg.org/multipage/parsing.html#insert-a-comment
+fn (mut p Parser) insert_comment() {
+	if mut p.current_token is CommentToken {
+		mut child := dom.CommentNode.new(p.doc, p.current_token.data())
+		mut last := p.open_elems.last()
+		last.append_child(child)
+		return
+	}
+
+	put(
+		typ: .warning
+		text: 'Current token is not a comment.'
+	)
+}
+
+// insert_text inserts a string into a dom.Text node or creates a new
+// one and adds it to the last opened element.
+//
+// NOTE: Skipping steps 1 and 2 right now.
+// https://html.spec.whatwg.org/multipage/parsing.html#insert-a-character
+fn (mut p Parser) insert_text(text string) {
+	// Step 3:
+	// "If the adjusted insertion location is in a Document node, then return.
+	// The DOM will not let Document nodes have Text node children, so they are
+	// dropped on the floor."
+	if p.open_elems.len == 0 {
+		put(
+			typ: .notice
+			text: 'Text nodes cannot be inserted in DOM root. They must go inside an open element. Ignoring token.'
+		)
+		return
+	}
+
+	// Step 4:
+	// "If there is a Text node immediately before the adjusted insertion location, then
+	// append data to that Text node's data. Otherwise, create a new Text node whose
+	// data is data and whose node document is the same as that of the element in which
+	// the adjusted insertion location finds itself, and insert the newly created node
+	// at the adjusted insertion location."
+	mut last_elem := p.open_elems.last()
+	insert_text_node := fn [mut p, mut last_elem, text] () {
+		mut text_node := dom.Text.new(p.doc, text)
+		last_elem.append_child(text_node)
+	}
+
+	if last_elem.has_child_nodes() {
+		if mut last_elems_last_child := last_elem.last_child {
+			if mut last_elems_last_child is dom.Text {
+				last_elems_last_child.data += text
+				return
+			}
+			insert_text_node()
+			return
+		}
+		insert_text_node()
+		return
+	}
+
+	insert_text_node()
+}

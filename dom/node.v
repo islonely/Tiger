@@ -31,7 +31,7 @@ pub fn CommentNode.new(owner_document &Document, text string) &CommentNode {
 }
 
 pub enum NodeType {
-	element = 1
+	element                = 1
 	attributetext
 	cdata_section
 	entity_reference
@@ -45,11 +45,11 @@ pub enum NodeType {
 }
 
 pub enum DocumentPosition {
-	disconnected = 0x01
-	preceding = 0x02
-	following = 0x04
-	contains = 0x08
-	contained_by = 0x10
+	disconnected            = 0x01
+	preceding               = 0x02
+	following               = 0x04
+	contains                = 0x08
+	contained_by            = 0x10
 	implementation_specific = 20
 }
 
@@ -110,6 +110,10 @@ pub fn (mut n NodeInterface) append_child(child &NodeInterface) {
 		unsafe {
 			n.first_child = child
 		}
+	} else {
+		unsafe {
+			child.prev_sibling = n.child_nodes[n.child_nodes.len - 1]
+		}
 	}
 	n.child_nodes << child
 	unsafe {
@@ -120,13 +124,6 @@ pub fn (mut n NodeInterface) append_child(child &NodeInterface) {
 // recur_pretty_str creates a pretty list of all the descendants of the node.
 fn (n NodeInterface) recur_pretty_str(depth int, depth_size int) string {
 	mut bldr := strings.new_builder(n.child_nodes.len * 50)
-	if n.child_nodes.len > 2 {
-		mut c := n.child_nodes[2]
-		println('interface: ${c.node_name.len}')
-		if mut c is HTMLHtmlElement {
-			println('struct: ' + c.node_name.len.str())
-		}
-	}
 	for child in n.child_nodes {
 		name := if child.node_name.len == 0 {
 			':child.node_name'

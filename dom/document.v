@@ -25,6 +25,7 @@ pub enum DocumentFormatType {
 // type HTMLOrSVGScriptElement = HTMLScriptElement | SVGScriptElement
 
 // https://html.spec.whatwg.org/multipage/dom.html#document
+[heap]
 pub struct Document {
 	// spec doesn't say this extends Node, but from the language it
 	// uses it appears it does?
@@ -33,6 +34,7 @@ pub mut:
 	doctype      ?&DocumentType
 	mode         DocumentMode
 	content_type string
+	scripting    bool = true
 	// url                    URL
 	// encoding               Encoding
 	// origin                 Origin
