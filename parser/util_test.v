@@ -8,15 +8,6 @@ fn test_rune_to_lower() {
 	assert rune_to_lower(`💀`) == `💀`
 }
 
-fn test_builder_contents() {
-	mut bldr := strings.new_builder(50)
-	assert builder_contents(bldr) == ''
-	bldr.write_string('hello')
-	assert builder_contents(bldr) == 'hello'
-	bldr.write_rune(`🫨`)
-	assert builder_contents(bldr) == 'hello🫨'
-}
-
 fn test_is_surrogate() {
 	for i in 0xd800..(0xdfff + 1) {
 		assert is_surrogate(rune(i)) == true

@@ -36,25 +36,25 @@ mut:
 // name gets the contents of DoctypeToken.name string builder.
 [inline]
 pub fn (tok DoctypeToken) name() string {
-	return builder_contents(tok.name)
+	return tok.name.bytestr()
 }
 
 // public_identifier gets the contents of DoctypeToken.public_identifier string builder.
 [inline]
 pub fn (tok DoctypeToken) public_identifier() string {
-	return builder_contents(tok.name)
+	return tok.public_identifier.bytestr()
 }
 
 // system_identifier gets the contents of DoctypeToken.system_identifier string builder.
 [inline]
 pub fn (tok DoctypeToken) system_identifier() string {
-	return builder_contents(tok.name)
+	return tok.system_identifier.bytestr()
 }
 
 // html returns the HTML code reprensentation of the DoctypeToken.
 [inline]
 pub fn (tok DoctypeToken) html() string {
-	return '<!DOCTYPE $tok.name' + if tok.public_identifier != doctype_missing {'public="${tok.public_identifier()}"'} else {''} + if tok.system_identifier != doctype_missing {' system="${tok.system_identifier()}"'} else {''} + '>'
+	return '<!DOCTYPE ${tok.name}' + if tok.public_identifier != doctype_missing {'public="${tok.public_identifier()}"'} else {''} + if tok.system_identifier != doctype_missing {' system="${tok.system_identifier()}"'} else {''} + '>'
 }
 
 // TagToken represents the occurence of <tag attribute="value"></tag>
@@ -71,7 +71,7 @@ mut:
 // name gets the contents of TagToken.name string builder.
 [inline]
 pub fn (tok TagToken) name() string {
-	return builder_contents(tok.name)
+	return tok.name.bytestr()
 }
 
 // html returns the HTML code representation of the TagToken.
@@ -81,9 +81,9 @@ pub fn (tok TagToken) html() string {
 	if !tok.is_start {
 		return '</' + tok.name() + '>'
 	}
-	bldr.write_string('<$tok.name()')
+	bldr.write_string('<${tok.name()}')
 	for attr in tok.attributes {
-		bldr.write_string(' $attr.name()="$attr.value()"')
+		bldr.write_string(' ${attr.name()}="${attr.value()}"')
 	}
 	bldr.write_string(if tok.self_closing {' />'} else {'>'})
 	return bldr.str()
@@ -102,13 +102,13 @@ mut:
 // name gets the contents of the Attribute.name string builder.
 [inline]
 pub fn (attr Attribute) name() string {
-	return builder_contents(attr.name)
+	return attr.name.bytestr()
 }
 
 // value gets the content of the Attribute.value string builder.
 [inline]
 pub fn (attr Attribute) value() string {
-	return builder_contents(attr.value)
+	return attr.value.bytestr()
 }
 
 // to_map converts an array of Attribute to a `map[string]string` where
@@ -125,19 +125,19 @@ pub fn (attrs []Attribute) to_map() map[string]string {
 // document.
 struct CommentToken {
 mut:
-	data Builder = strings.new_builder(50)
+	data Builder = strings.new_builder(100)
 }
 
 // data gets the contents of the CommentToken.data string builder.
 [inline]
 pub fn (tok CommentToken) data() string {
-	return builder_contents(tok.data)
+	return tok.data.bytestr()
 }
 
 // html returns the HTML code representation of the CommentToken.
 [inline]
 pub fn (tok CommentToken) html() string {
-	return '<!--' + builder_contents(tok.data) + '-->'
+	return '<!--' + tok.data.bytestr() + '-->'
 }
 
 // CharacterToken represents a single character in an HTML document.
