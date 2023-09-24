@@ -1,7 +1,7 @@
 # Cyberian_Tiger
 > **NOTE**
 >
-> Now waiting on this one to be resolved [#19418](https://github.com/vlang/v/issues/19418).
+> Fixed: ~~Now waiting on this one to be resolved~~ [#19418](https://github.com/vlang/v/issues/19418).
 >
 > Fixed: ~~This project is on hiatus until V resolves issue~~ [#19207](https://github.com/vlang/v/issues/19207).
 
