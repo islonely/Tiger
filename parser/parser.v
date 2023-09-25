@@ -73,6 +73,9 @@ const (
 	]
 )
 
+const implied_end_tag_names = ['caption', 'colgroup', 'dd', 'li', 'optgroup', 'option',
+	'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead']
+
 enum InsertionMode {
 	@none
 	after_after_body
@@ -100,6 +103,46 @@ enum InsertionMode {
 	text
 }
 
+// https://html.spec.whatwg.org/multipage/parsing.html#the-list-of-active-formatting-elements
+pub enum AFEMarker {
+	applet
+	object
+	marquee
+	template
+	td
+	th
+	caption
+}
+
+pub type ActiveFormattingElements = AFEMarker | dom.HTMLElement
+
+// https://html.spec.whatwg.org/multipage/parsing.html#other-parsing-state-flags
+pub enum ScriptingFlag {
+	enabled
+	disabled
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#other-parsing-state-flags
+pub enum FramesetOKFlag {
+	ok
+	not_ok
+}
+
+pub type OpenElements = []&dom.NodeInterface
+
+// has_by_tag_name searches the open elements for a tag with the given tag name
+// and returns true if it's found; false if not.
+pub fn (open_elements OpenElements) has_by_tag_name(tag_name string) bool {
+	for element in open_elements {
+		el := &dom.HTMLElement(element)
+		println(el.local_name)
+		if el.local_name == tag_name {
+			return true
+		}
+	}
+	return false
+}
+
 // Parser parses the tokens emitted from the Tokenizer and creates
 // a document tree which is returned from `fn (mut Parser) parse`.
 struct Parser {
@@ -107,15 +150,17 @@ mut:
 	tokenizer                Tokenizer
 	insertion_mode           InsertionMode = .initial
 	original_insertion_mode  InsertionMode = .@none
+	scripting                ScriptingFlag = .disabled
+	frameset_ok              FramesetOKFlag = .ok
 	template_insertion_modes []InsertionMode
-	open_elems               []&dom.NodeInterface
+	open_elems               OpenElements
+	active_formatting_elems  []&ActiveFormattingElements
 	doc                      &dom.Document = dom.Document.new()
 	// adjusted_current_NodeBase    &dom.NodeBase
 	last_token      Token
 	current_token   Token
 	next_token      Token
 	reconsume_token bool
-	scripting bool = true
 }
 
 // Parser.from_string instantiates a Parser from the source string.
@@ -411,32 +456,32 @@ fn (mut p Parser) in_head_insertion_mode() {
 			)
 		}
 		TagToken {
+			mut last_opened_elem := p.open_elems.last()
+			tag_name := p.current_token.name()
 			if p.current_token.is_start {
-				mut last_opened_elem := p.open_elems.last()
-				tag_name := p.current_token.name()
 				if tag_name == 'html' {
 					p.in_body_insertion_mode()
 					return
 				} else if tag_name in ['base', 'basefont', 'bgsound', 'link'] {
 					mut child := match tag_name {
 						'base' {
-							&dom.NodeInterface(dom.HTMLBaseElement.new(p.doc))
+							&dom.HTMLElement(dom.HTMLBaseElement.new(p.doc))
 						}
 						'basefont' {
-							&dom.NodeInterface(&dom.HTMLElement{
+							&dom.HTMLElement(&dom.HTMLElement{
 								owner_document: p.doc
 								node_name: 'basefont'
 							})
 						}
 						'bgsound' {
 							// todo: replace with appropriate element
-							&dom.NodeInterface(&dom.HTMLElement{
+							&dom.HTMLElement(&dom.HTMLElement{
 								owner_document: p.doc
 								node_name: 'bgsound'
 							})
 						}
 						'link' {
-							&dom.NodeInterface(dom.HTMLLinkElement.new(p.doc))
+							&dom.HTMLElement(dom.HTMLLinkElement.new(p.doc))
 						}
 						else {
 							put(
@@ -475,26 +520,26 @@ fn (mut p Parser) in_head_insertion_mode() {
 				} else if (tag_name == 'noscript' && p.doc.scripting) || tag_name in ['noframes', 'style'] {
 					mut child := match tag_name {
 						'noscript' {
-							&dom.NodeInterface(&dom.HTMLElement{
+							&dom.HTMLElement(&dom.HTMLElement{
 								owner_document: p.doc
 								local_name: 'noscript'
 							})
 						}
 						'noframes' {
-							&dom.NodeInterface(&dom.HTMLElement{
+							&dom.HTMLElement(&dom.HTMLElement{
 								owner_document: p.doc
 								local_name: 'noframes'
 							})
 						}
 						'style' {
-							&dom.NodeInterface(dom.HTMLStyleElement.new(p.doc))
+							&dom.HTMLElement(dom.HTMLStyleElement.new(p.doc))
 						}
 						else {
 							put(
-								typ: .fatal
+								typ: .warning
 								text: 'Unexpected tag name in in_head_insertion_mode > TagToken > "${tag_name}"'
 							)
-							exit(1)
+							return
 						}
 					}
 					last_opened_elem.append_child(child)
@@ -514,8 +559,81 @@ fn (mut p Parser) in_head_insertion_mode() {
 				} else if tag_name == 'script' {
 					mut child := dom.HTMLScriptElement.new(p.doc)
 					child.namespace_uri = dom.namespaces[dom.NamespaceURI.html]
+					child.force_async = false
+					// "if the parser was created as part of the HTML fragment parsing algorithm
+					// then set the script element's already started to true"
+					// "If the parser was invoked via the document.write() or document.writeln()
+					// methods, then optionally set the script element's already started to true.
+					// (For example, the user agent might use this clause to prevent execution of
+					// cross-origin scripts inserted via document.write() under slow network conditions,
+					// or when the page has already taken a long time to load.)"
 					last_opened_elem.append_child(child)
 					p.open_elems << child
+					p.tokenizer.state = .script_data
+					p.original_insertion_mode = p.insertion_mode
+					p.insertion_mode = .text
+					return
+				} else if tag_name == 'template' {
+					mut child := dom.HTMLTemplateElement.new(p.doc)
+					p.open_elems << child
+					p.active_formatting_elems << AFEMarker.template
+					p.frameset_ok = .not_ok
+					p.insertion_mode = .in_template
+					p.template_insertion_modes << .in_template
+				}
+			} else {
+				// end tag
+				if tag_name == 'head' {
+					_ := p.open_elems.pop()
+					p.insertion_mode = .after_head
+					return
+				} else if tag_name in ['body', 'html', 'br'] {
+					anything_else()
+					return
+				} else if tag_name == 'template' {
+					if !p.open_elems.has_by_tag_name('template') {
+						put(
+							typ: .warning
+							text: 'Unexpected </template> tag token; ingoring token.'
+						)
+						return
+					}
+
+					p.generate_all_implied_end_tags_thorougly()
+					if p.open_elems.len == 0 {
+						put(
+							typ: .warning
+							text: 'Unexpected </template> tag token; ignoring token.'
+						)
+						return
+					}
+					mut template_element := p.open_elems.last()
+					if &dom.HTMLElement(template_element).local_name != 'template' {
+						put(
+							typ: .warning
+							text: 'Current node is not a <template> tag.'
+						)
+					}
+					for &dom.HTMLElement(template_element).local_name != 'template' {
+						if p.open_elems.len == 0 {
+							put(
+								typ: .warning
+								text: 'There were no <template> tags in the parser\'s stack of open elements.'
+							)
+							break
+						}
+						template_element = p.open_elems.pop()
+					}
+					p.clear_active_formatting_elements_to_last_marker()
+					if p.template_insertion_modes.len != 0 {
+						p.template_insertion_modes.pop()
+					} else {
+						put(
+							typ: .warning
+							text: 'There were no items on the parer\'s stack of template insertion modes.'
+						)
+					}
+					p.reset_insertion_mode_appropriately()
 				}
 			}
 		}
@@ -586,4 +704,118 @@ fn (mut p Parser) insert_text(text string) {
 	}
 
 	insert_text_node()
+}
+
+[params]
+pub struct GenerateImpliedTagsParams {
+__global:
+	exclude []string
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#closing-elements-that-have-implied-end-tags
+fn (mut p Parser) generate_all_implied_end_tags_thorougly(params GenerateImpliedTagsParams) {
+	put(
+		typ: .warning
+		text: 'todo: implement generate implied end tags'
+	)
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#clear-the-list-of-active-formatting-elements-up-to-the-last-marker
+fn (mut p Parser) clear_active_formatting_elements_to_last_marker() {
+	for p.active_formatting_elems.len > 0 {
+		if p.active_formatting_elems.pop() is AFEMarker {
+			break
+		}
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately
+fn (mut p Parser) reset_insertion_mode_appropriately() {
+	mut last := false
+	mut node_index := p.open_elems.len - 1
+	mut node := p.open_elems[node_index]
+	for {
+		if node == p.open_elems.first() {
+			last = true
+			// if the parser was created as part of the HTML fragment parsing algorithm
+			// set the node to the context element passed to that algorithm
+		}
+		
+		if mut node is dom.HTMLSelectElement {
+			if last {
+				p.insertion_mode = .in_select
+				return
+			}
+			mut ancestor := p.open_elems.first()
+			if mut ancestor is dom.HTMLTemplateElement {
+				p.insertion_mode = .in_select
+				return
+			}
+			if mut ancestor is dom.HTMLTableElement {
+				p.insertion_mode = .in_select_in_table
+				return
+			}
+			continue
+		}
+
+		html_node := &dom.HTMLElement(node)
+		// todo: this should actually test with
+		// `if html_node is dom.HTMLBodyElement` instead
+		// of comparing the local name.
+		if html_node.local_name in ['td', 'th'] && !last {
+			p.insertion_mode = .in_cell
+			return
+		}
+		if html_node.local_name == 'tr' {
+			p.insertion_mode = .in_row
+			return
+		}
+		if html_node.local_name in ['tbody', 'thead', 'tfoot'] {
+			p.insertion_mode = .in_table_body
+			return
+		}
+		if html_node.local_name == 'caption' {
+			p.insertion_mode = .in_caption
+			return
+		}
+		if html_node.local_name == 'colgroup' {
+			p.insertion_mode = .in_column_group
+			return
+		}
+		if html_node.local_name == 'table' {
+			p.insertion_mode = .in_table
+			return
+		}
+		if html_node.local_name == 'template' {
+			p.insertion_mode = p.template_insertion_modes.last()
+			return
+		}
+		if html_node.local_name == 'head' {
+			p.insertion_mode = .in_head
+			return
+		}
+		if html_node.local_name == 'body' {
+			p.insertion_mode = .in_body
+			return
+		}
+		if html_node.local_name == 'frameset' {
+			p.insertion_mode = .in_frameset
+			return
+		}
+		if html_node.local_name == 'html' {
+			p.insertion_mode = if p.doc.head == none {
+				.before_head
+			} else {
+				.after_head
+			}
+			return
+		}
+		if last {
+			p.insertion_mode = .in_body
+			return
+		}
+
+		node_index--
+		node = p.open_elems[node_index]
+	}
 }

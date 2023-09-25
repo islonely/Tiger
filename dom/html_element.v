@@ -4,8 +4,7 @@ type FloatingBoolString = bool | f64 | string
 
 // https://html.spec.whatwg.org/multipage/dom.html#htmlelement
 pub struct HTMLElement {
-	Element
-	// GlobalEventHandlers
+	Node // GlobalEventHandlers
 	// ElementContentEditable
 	// HTMLOrSVGElement
 pub mut:
@@ -25,6 +24,15 @@ pub mut:
 	inner_text       string
 	outer_text       string
 	popover          ?string
+	prefix           ?string
+	local_name       string
+	tag_name         string
+	id               string
+	class_name       string
+	class_list       []string
+	slot             string
+	attributes       map[string]string
+	namespace_uri    ?string
 }
 
 [inline]

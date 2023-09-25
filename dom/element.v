@@ -33,18 +33,17 @@ struct ShadowRootInit {
 }
 
 // https://dom.spec.whatwg.org/#interface-element
-pub struct Element {
-	Node
-pub mut:
-	prefix     ?string
+pub interface Element {
+	NodeInterface
+mut:
+	prefix ?string
 	local_name string
-	tag_name   string
-	id         string
+	tag_name string
+	id string
 	class_name string
 	class_list []string
-	slot       string
+	slot string
 	attributes map[string]string
-__global:
 	namespace_uri ?string
 }
 

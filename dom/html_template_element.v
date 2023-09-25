@@ -4,14 +4,13 @@ module dom
 pub struct HTMLTemplateElement {
 	HTMLElement
 pub mut:
-	content &DocumentFragment
+	content &DocumentFragment = unsafe { nil }
 }
 
 [inline]
-pub fn HTMLTemplateElement.new(owner_document &Document, doc_fragment &DocumentFragment) &HTMLTemplateElement {
+pub fn HTMLTemplateElement.new(owner_document &Document) &HTMLTemplateElement {
 	return &HTMLTemplateElement{
 		owner_document: owner_document
 		local_name: 'template'
-		content: doc_fragment
 	}
 }
