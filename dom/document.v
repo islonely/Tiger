@@ -1,5 +1,7 @@
 module dom
 
+import strings
+
 pub enum DocumentReadyState {
 	loading
 	inertactive
@@ -97,6 +99,23 @@ pub fn (mut doc Document) append_child(child &NodeInterface) {
 	unsafe {
 		doc.last_child = child
 	}
+}
+
+// to_html converts a document's element, comment, and text nodes into HTML.
+pub fn (mut doc Document) to_html() string {
+	mut builder := strings.new_builder(5000)
+	if doctype := doc.doctype {
+		builder.write_string(doctype.to_html())
+	}
+	for i in 0 .. doc.child_nodes.len {
+		mut child_node := doc.child_nodes[i]
+		if mut child_node is Element {
+			builder.writeln(child_node.to_html(0))
+		} else if mut child_node is CommentNode {
+			builder.writeln('<!--${child_node.text}-->')
+		}
+	}
+	return builder.str()
 }
 
 // pretty_print prints a pretty list of all the document's descendants.
