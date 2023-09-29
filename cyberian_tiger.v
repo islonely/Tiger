@@ -7,5 +7,5 @@ fn main() {
 	mut p := parser.Parser.from_runes(src)
 	// mut p := parser.Parser.from_url('https://example.com/')!
 	doc := p.parse()
-	doc.pretty_string()
+	println(doc.pretty_string())
 }

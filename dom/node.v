@@ -125,14 +125,12 @@ pub fn (mut n NodeInterface) append_child(child &NodeInterface) {
 fn (n NodeInterface) recur_pretty_str(depth int, depth_size int) string {
 	mut bldr := strings.new_builder(n.child_nodes.len * 50)
 	for child in n.child_nodes {
-		name := if child.node_name.len == 0 {
-			':child.node_name'
-		} else if child is Element {
+		name := if child is Element {
 			':${child.local_name}'
 		} else if child is CommentNode {
 			':"${child.text}"'
 		} else {
-			''
+			':<no_name>'
 		}
 		bldr.write_string(' '.repeat(depth * depth_size) + '|_${child.node_type}${name}\n')
 		bldr.write_string(child.recur_pretty_str(depth + 1, depth_size))

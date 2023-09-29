@@ -633,7 +633,7 @@ fn (mut p Parser) in_head_insertion_mode() {
 							text: 'There were no items on the parer\'s stack of template insertion modes.'
 						)
 					}
-					p.reset_insertion_mode_appropriately()
+					// p.reset_insertion_mode_appropriately()
 				}
 			}
 		}
@@ -730,7 +730,7 @@ fn (mut p Parser) clear_active_formatting_elements_to_last_marker() {
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately
-fn (mut p Parser) reset_insertion_mode_appropriately() {
+/*fn (mut p Parser) reset_insertion_mode_appropriately() {
 	mut last := false
 	mut node_index := p.open_elems.len - 1
 	mut node := p.open_elems[node_index]
@@ -818,4 +818,4 @@ fn (mut p Parser) reset_insertion_mode_appropriately() {
 		node_index--
 		node = p.open_elems[node_index]
 	}
-}
+}*/
