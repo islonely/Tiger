@@ -76,6 +76,7 @@ pub fn (mut element Element) to_html(depth int) string {
 				builder.write_string('<!--${child_node.text}-->')
 			}
 		}
+		builder.write_string('\t'.repeat(depth))
 	}
 	builder.writeln('</${element.local_name}>')
 	return builder.str()

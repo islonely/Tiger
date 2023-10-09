@@ -202,7 +202,7 @@ pub fn (mut p Parser) parse() &dom.Document {
 			.after_after_frameset {}
 			.after_body {}
 			.after_frameset {}
-			.after_head {}
+			.after_head { p.after_head_insertion_mode() }
 			.before_head { p.before_head_insertion_mode() }
 			.before_html { p.before_html_insertion_mode() }
 			.initial { p.initial_insertion_mode() }
@@ -211,8 +211,8 @@ pub fn (mut p Parser) parse() &dom.Document {
 			.in_cell {}
 			.in_column_group {}
 			.in_frameset {}
-			.in_head {}
-			.in_head_no_script {}
+			.in_head { p.in_head_insertion_mode() }
+			.in_head_no_script { p.in_head_no_script_insertion_mode() }
 			.in_row {}
 			.in_select {}
 			.in_select_in_table {}
@@ -437,7 +437,10 @@ fn (mut p Parser) before_head_insertion_mode() {
 // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead
 fn (mut p Parser) in_head_insertion_mode() {
 	anything_else := fn [mut p] () {
-
+		// popped item should be head element
+		p.open_elems.pop()
+		p.insertion_mode = .after_head
+		p.reconsume_token = true
 	}
 
 	match mut p.current_token {
@@ -580,6 +583,11 @@ fn (mut p Parser) in_head_insertion_mode() {
 					p.frameset_ok = .not_ok
 					p.insertion_mode = .in_template
 					p.template_insertion_modes << .in_template
+				} else if tag_name == 'head' {
+					put(
+						typ: .warning
+						text: 'Unexpected head tag <head>: ignoring token.'
+					)
 				}
 			} else {
 				// end tag
@@ -633,12 +641,87 @@ fn (mut p Parser) in_head_insertion_mode() {
 							text: 'There were no items on the parer\'s stack of template insertion modes.'
 						)
 					}
-					// p.reset_insertion_mode_appropriately()
+					p.reset_insertion_mode_appropriately()
+				} else {
+					put(
+						typ: .warning
+						text: 'Unexpected end tag </${tag_name}>: ignoring token.'
+					)
 				}
 			}
 		}
-		else {}
+		else {
+			anything_else()
+		}
 	}
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inheadnoscript
+fn (mut p Parser) in_head_no_script_insertion_mode() {
+	anything_else := fn [mut p] () {
+		put(
+			typ: .warning
+			text: 'Parse error: ${p.insertion_mode}'
+		)
+		// Should be a noscript element and the last item in p.open_elems
+		// should now be the head element.
+		p.open_elems.pop()
+		p.insertion_mode = .in_head
+		p.reconsume_token = true
+	}
+
+	match mut p.current_token {
+		DoctypeToken {
+			put(
+				typ: .warning
+				text: 'Unexpected doctype tag: ignoring token.'
+			)
+		}
+		TagToken {
+			tag_name := p.current_token.name()
+			if p.current_token.is_start {
+				if tag_name == 'html' {
+					p.in_body_insertion_mode()
+				} else if tag_name in ['basefont', 'bgsound', 'link', 'meta', 'noframes', 'style'] {
+					p.in_head_insertion_mode()
+				} else if tag_name in ['head', 'noscript'] {
+					put(
+						typ: .warning
+						text: 'Unexpected start tag <${tag_name}>: ignoring token.'
+					)
+				}
+			} else {
+				if tag_name == 'noscript' {
+					// Should be a noscript element and the last item in p.open_elems
+					// should now be the head element.
+					p.open_elems.pop()
+					p.insertion_mode = .in_head
+				} else if tag_name == 'br' {
+					anything_else()
+				} else {
+					put(
+						typ: .warning
+						text: 'Unexpected end tag </${tag_name}>: ignoring token.'
+					)
+				}
+			}
+		}
+		CharacterToken {
+			if p.current_token in parser.whitespace {
+				p.in_head_insertion_mode()
+			}
+		}
+		CommentToken {
+			p.in_head_insertion_mode()
+		}
+		else {
+			anything_else()
+		}
+	}
+}
+
+fn (mut p Parser) after_head_insertion_mode() {
+
 }
 
 fn (mut p Parser) in_body_insertion_mode() {}
@@ -730,12 +813,14 @@ fn (mut p Parser) clear_active_formatting_elements_to_last_marker() {
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately
-/*fn (mut p Parser) reset_insertion_mode_appropriately() {
+fn (mut p Parser) reset_insertion_mode_appropriately() {
 	mut last := false
 	mut node_index := p.open_elems.len - 1
 	mut node := p.open_elems[node_index]
 	for {
-		if node == p.open_elems.first() {
+		// V bug doesn't allow this without voidptr:
+		// https://github.com/vlang/v/issues/19441
+		if voidptr(node) == voidptr(p.open_elems.first()) {
 			last = true
 			// if the parser was created as part of the HTML fragment parsing algorithm
 			// set the node to the context element passed to that algorithm
@@ -818,4 +903,4 @@ fn (mut p Parser) clear_active_formatting_elements_to_last_marker() {
 		node_index--
 		node = p.open_elems[node_index]
 	}
-}*/
+}

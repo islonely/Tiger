@@ -129,6 +129,8 @@ fn (n NodeInterface) recur_pretty_str(depth int, depth_size int) string {
 			':${child.local_name}'
 		} else if child is CommentNode {
 			':"${child.text}"'
+		} else if child is DocumentType {
+			':${child.name}'
 		} else {
 			':<no_name>'
 		}
