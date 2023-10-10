@@ -126,7 +126,12 @@ fn (n NodeInterface) recur_pretty_str(depth int, depth_size int) string {
 	mut bldr := strings.new_builder(n.child_nodes.len * 50)
 	for child in n.child_nodes {
 		name := if child is Element {
-			':${child.local_name}'
+			mut name_builder := strings.new_builder(200)
+			name_builder.write_string(':${child.local_name}')
+			for attr_name, attr_val in child.attributes {
+				name_builder.write_string('&${attr_name}="${attr_val}"')
+			}
+			name_builder.str()
 		} else if child is CommentNode {
 			':"${child.text}"'
 		} else if child is DocumentType {

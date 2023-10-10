@@ -143,6 +143,17 @@ pub fn (open_elements OpenElements) has_by_tag_name(tag_name string) bool {
 	return false
 }
 
+// has searches the open elements for the given element and returns true
+// if it's found; false if not.
+pub fn (open_elements OpenElements) has(looking_for voidptr) bool {
+	for element in open_elements {
+		if voidptr(element) == looking_for {
+			return true
+		}
+	}
+	return false
+}
+
 // Parser parses the tokens emitted from the Tokenizer and creates
 // a document tree which is returned from `fn (mut Parser) parse`.
 struct Parser {
@@ -741,6 +752,7 @@ fn (mut p Parser) in_head_no_script_insertion_mode() {
 	}
 }
 
+// https://html.spec.whatwg.org/multipage/parsing.html#the-after-head-insertion-mode
 fn (mut p Parser) after_head_insertion_mode() {
 	anything_else := fn [mut p] () {
 		mut child := dom.HTMLBodyElement.new(p.doc)
@@ -843,7 +855,122 @@ fn (mut p Parser) after_head_insertion_mode() {
 	}
 }
 
-fn (mut p Parser) in_body_insertion_mode() {}
+// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody
+fn (mut p Parser) in_body_insertion_mode() {
+	match mut p.current_token {
+		CharacterToken {
+			if p.current_token == rune(0) {
+				put(
+					typ: .warning
+					text: 'Unexpected null character token: ignoring token.'
+				)
+			} else if p.current_token in parser.whitespace {
+				p.reconstruct_active_formatting_elements()
+				p.insert_text(p.current_token.str())
+			} else {
+				p.reconstruct_active_formatting_elements()
+				p.insert_text(p.current_token.str())
+				p.frameset_ok = .not_ok
+			}
+		}
+		CommentToken {
+			p.insert_comment()
+		}
+		DoctypeToken {
+			put(
+				typ: .warning
+				text: 'Unexpected doctype token: ignoring token.'
+			)
+		}
+		TagToken {
+			tag_name := p.current_token.name()
+			if p.current_token.is_start {
+				match tag_name {
+					'html' {
+						put_prefix := put(
+							typ: .warning
+							text: 'Unexpected start tag <html>'
+							newline: false
+							print: false
+						)
+						if p.open_elems.has_by_tag_name('template') {
+							put(
+								typ: .warning
+								text: '${put_prefix}: ignoring token.'
+							)
+						} else {
+							put(
+								typ: .warning
+								text: '${put_prefix}.'
+							)
+							// Adam: I've got to be misunderstanding something here. There's no way we're supposed
+							// to just copy the attributes from an html start tag to the last opened element, right?
+							//
+							// Otherwise, for each attribute on the token, check to see if the attribute is
+							// already present on the top element of the stack of open elements. If it is not,
+							// add the attribute and its corresponding value to that element.
+							for mut attr in p.current_token.attributes {
+								if p.open_elems.len > 0 {
+									mut last_opened_elem := &dom.HTMLElement(p.open_elems.last())
+									last_opened_elem.attributes[attr.name.str()] = attr.value.str()
+								}
+							}
+						}
+					}
+					'base', 'basefont', 'bgsound', 'link', 'meta', 'noframes', 'script', 'style', 'template', 'title' {
+						p.in_head_insertion_mode()
+					}
+					'body' {
+						put_prefix := put(
+							typ: .warning
+							text: 'Unexpected start tag <body>'
+							newline: false
+							print: false
+						)
+						second_elem_is_body := &dom.HTMLElement(p.open_elems[1] or {
+							put(
+								typ: .warning
+								text: '${put_prefix}: ignoring token.'
+							)
+							return
+						}).local_name != 'body'
+						if p.open_elems.len == 1 || second_elem_is_body || p.open_elems.has_by_tag_name('template') {
+							put(
+								typ: .warning
+								text: '${put_prefix}: ignoring token.'
+							)
+						} else {
+							// Otherwise, set the frameset-ok flag to "not ok"; then, for each attribute on the token,
+							// check to see if the attribute is already present on the body element (the second
+							// element) on the stack of open elements, and if it is not, add the attribute and its
+							// corresponding value to that element.
+							p.frameset_ok = .not_ok
+							for mut attr in p.current_token.attributes {
+								if mut body := p.doc.body {
+									attr_name := attr.name.str()
+									if attr_name !in body.attributes {
+										body.attributes[attr_name] = attr.value.str()
+									}
+								}
+							}
+						}
+					}
+					else {}
+				}
+			} else { // end tag
+				match tag_name {
+					'template' {
+						p.in_head_insertion_mode()
+					}
+					else {}
+				}
+			}
+		}
+		else {
+			println('in body else not implemented @ parser.v:' + @LINE)
+		}
+	}
+}
 
 // insert_comment adds a comment to the last opened element (and always assumes
 // an element is open).
@@ -928,6 +1055,57 @@ fn (mut p Parser) clear_active_formatting_elements_to_last_marker() {
 		if p.active_formatting_elems.pop() is AFEMarker {
 			break
 		}
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#reconstruct-the-active-formatting-elements
+fn (mut p Parser) reconstruct_active_formatting_elements() {
+	// 1) If there are no entries in the list of active formatting elements, then there is nothing
+	// to reconstruct; stop this algorithm.
+	if p.active_formatting_elems.len == 0 {
+		return
+	}
+	// 2) If the last (most recently added) entry in the list of active formatting elements is a
+	// marker, or if it is an element that is in the stack of open elements, then there is nothing
+	// to reconstruct; stop this algorithm.
+	if p.active_formatting_elems.last() is AFEMarker || p.open_elems.has(p.active_formatting_elems.last()) {
+		return
+	}
+	// 3) Let entry be the last (most recently added) element in the list of active formatting
+	// elements.
+	mut i := p.active_formatting_elems.len - 1
+	mut entry := p.active_formatting_elems[i]
+	// 4) Rewind: If there are no entries before entry in the list of active formatting elements,
+	// then jump to the step labeled create.
+	rewind:
+	if p.active_formatting_elems.len > 1 {
+		unsafe { goto create }
+	}
+	// 5) Let entry be the entry one earlier than entry in the list of active formatting elements.
+	i--
+	entry = p.active_formatting_elems[i]
+	// 6) If entry is neither a marker nor an element that is also in the stack of open elements,
+	// go to the step labeled rewind.
+	if entry !is AFEMarker && !p.open_elems.has(entry) {
+		unsafe { goto rewind }
+	}
+	// 7) Advance: Let entry be the element one later than entry in the list of active formatting
+	// elements.
+	advance:
+
+	// 8) Create: Insert an HTML element for the token for which the element entry was created,
+	// to obtain new element.
+	create:
+	mut last_opened_elem := p.open_elems.last()
+	last_opened_elem.append_child(entry as dom.HTMLElement)
+	p.open_elems << entry as dom.HTMLElement
+	// 9) Replace the entry for entry in the list with an entry for new element.
+	// We stored the entry as a dom.HTMLElement and not a token, so there is no need to replace
+	// it since the element we added to open_elems above is a reference to the same entry element.
+	// 10) If the entry for new element in the list of active formatting elements is not the last
+	// entry in the list, return to the step labeled advance.
+	if p.active_formatting_elems.len > 1 {
+		unsafe { goto advance }
 	}
 }
 
