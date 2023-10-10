@@ -52,6 +52,7 @@ pub mut:
 	dir                       string
 	body                      ?&HTMLElement
 	head                      ?&HTMLHeadElement
+	form                      ?&HTMLFormElement
 	// images HTMLCollection
 	// embeds HTMLCollection
 	// plugins HTMLCollection

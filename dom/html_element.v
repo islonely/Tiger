@@ -40,5 +40,6 @@ pub fn HTMLElement.new(owner_document &Document, name string) &HTMLElement {
 	return &HTMLElement{
 		owner_document: owner_document
 		local_name: name
+		namespace_uri: namespaces[NamespaceURI.html]
 	}
 }

@@ -76,6 +76,18 @@ const (
 const implied_end_tag_names = ['caption', 'colgroup', 'dd', 'li', 'optgroup', 'option',
 	'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead']
 
+// todo: include mathml and svg tags
+const special_tag_names = ['address', 'applet', 'area', 'article', 'aside', 'base',
+	'basefont', 'bgsound', 'blockquote', 'body', 'br', 'button', 'caption', 'center',
+	'col', 'colgroup', 'dd', 'details', 'dir', 'div', 'dl', 'dt', 'embed', 'fieldset',
+	'figcaption', 'figure', 'footer', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3',
+	'h4', 'h5', 'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'iframe', 'img',
+	'input', 'isindex', 'li', 'link', 'listing', 'main', 'marquee', 'menu', 'meta',
+	'nav', 'noembed', 'noframes', 'noscript', 'object', 'ol', 'p', 'param', 'plaintext',
+	'pre', 'script', 'section', 'select', 'source', 'style', 'summary', 'table', 'tbody',
+	'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'title', 'tr', 'track',
+	'ul', 'wbr', 'xmp']
+
 enum InsertionMode {
 	@none
 	after_after_body
@@ -132,11 +144,11 @@ pub type OpenElements = []&dom.NodeInterface
 
 // has_by_tag_name searches the open elements for a tag with the given tag name
 // and returns true if it's found; false if not.
-pub fn (open_elements OpenElements) has_by_tag_name(tag_name string) bool {
+pub fn (open_elements OpenElements) has_by_tag_name(tag_names ...string) bool {
 	for element in open_elements {
 		el := &dom.HTMLElement(element)
 		println(el.local_name)
-		if el.local_name == tag_name {
+		if el.local_name in tag_names {
 			return true
 		}
 	}
@@ -207,6 +219,7 @@ pub fn Parser.from_url(url string) !Parser {
 // the document tree of the parsed content or `none`.
 pub fn (mut p Parser) parse() &dom.Document {
 	for p.tokenizer.state != .eof {
+		println(p.current_token)
 		match p.insertion_mode {
 			.@none {}
 			.after_after_body {}
@@ -230,7 +243,7 @@ pub fn (mut p Parser) parse() &dom.Document {
 			.in_table {}
 			.in_table_body {}
 			.in_table_text {}
-			.in_template {}
+			.in_template { p.in_template_insertion_mode() }
 			.text {}
 		}
 
@@ -933,8 +946,8 @@ fn (mut p Parser) in_body_insertion_mode() {
 								text: '${put_prefix}: ignoring token.'
 							)
 							return
-						}).local_name != 'body'
-						if p.open_elems.len == 1 || second_elem_is_body || p.open_elems.has_by_tag_name('template') {
+						}).local_name == 'body'
+						if p.open_elems.len == 1 || !second_elem_is_body || p.open_elems.has_by_tag_name('template') {
 							put(
 								typ: .warning
 								text: '${put_prefix}: ignoring token.'
@@ -955,21 +968,277 @@ fn (mut p Parser) in_body_insertion_mode() {
 							}
 						}
 					}
-					else {}
+					'frameset' {
+						put_prefix := put(
+							typ: .warning
+							text: 'Unexpected start tag <frameset>'
+							newline: false
+							print: false
+						)
+						second_elem_is_body := &dom.HTMLElement(p.open_elems[1] or {
+							put(
+								typ: .warning
+								text: '${put_prefix}: ignoring token.'
+							)
+							return
+						}).local_name == 'body'
+						if p.open_elems.len == 1 || !second_elem_is_body || p.frameset_ok == .not_ok {
+							put(
+								typ: .warning
+								text: '${put_prefix}: ignoring token.'
+							)
+						} else {
+							// 1) Remove the second element on the stack of open elements from its parent node, if it has one.
+							if p.open_elems.len >= 2 {
+								p.open_elems.delete(1)
+							}
+							// 2) Pop all the nodes from the bottom of the stack of open elements, from the current node up to,
+							// but not including, the root html element.
+							for p.open_elems.len > 0 {
+								if &dom.HTMLElement(p.open_elems.last()).local_name == 'html' {
+									break
+								}
+								_ := p.open_elems.pop()
+							}
+							// 3) Insert an HTML element for the token.
+							mut child := dom.HTMLFrameSetElement.new(p.doc)
+							p.open_elems << child
+							// 4) Switch the insertion mode to "in frameset".
+							p.insertion_mode = .in_frameset
+						}
+					}
+					'address', 'article', 'aside', 'blockquote', 'center', 'details', 'dialog', 'dir', 'div', 'dl', 'fieldset', 'figcaption', 'figure', 'footer', 'header', 'hgroup', 'main', 'menu', 'nav', 'ol', 'p', 'section', 'summary', 'ul' {
+						// todo: has_element_in_scope
+						// if p.has_element_in_button_scope('p') {
+						// 	p.close_element('p')
+						// }
+						mut last_opened_elem := p.open_elems.last()
+						mut child := dom.HTMLElement.new(p.doc, tag_name)
+						p.open_elems << child
+						last_opened_elem.append_child(child)
+					}
+					'h1', 'h2', 'h3', 'h4', 'h5', 'h6' {
+						// todo: has_element_in_scope
+						// if p.has_element_in_button_scope('p') {
+						// 	p.close_element('p')
+						// }
+						if p.open_elems.len > 0 {
+							if &dom.HTMLElement(p.open_elems.last()).local_name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] {
+								put(
+									typ: .warning
+									text: 'Unexpected start tag <${tag_name}>'
+								)
+								_ := p.open_elems.pop()
+							}
+						}
+						mut last_opened_elem := p.open_elems.last()
+						mut child := dom.HTMLElement.new(p.doc, tag_name)
+						p.open_elems << child
+						last_opened_elem.append_child(child)
+					}
+					'pre', 'listing' {
+						// todo: has_element_in_scope
+						// if p.has_element_in_button_scope('p') {
+						// 	p.close_element('p')
+						// }
+						mut last_opened_elem := p.open_elems.last()
+						mut child := dom.HTMLElement.new(p.doc, tag_name)
+						p.open_elems << child
+						last_opened_elem.append_child(child)
+						if mut p.next_token is CharacterToken {
+							linefeed := rune(0x000a)
+							if p.next_token == linefeed {
+								p.consume_token()
+							}
+						}
+						p.frameset_ok = .not_ok
+					}
+					'form' {
+						if p.doc.form != none {
+							put(
+								typ: .warning
+								text: 'Unexpected start tag <form>: ignoring token.'
+							)
+						} else {
+							// todo: has_element_in_scope
+							// if p.has_element_in_button_scope('p') {
+							// 	p.close_element('p')
+							// }
+							mut last_opened_elem := p.open_elems.last()
+							mut child := dom.HTMLFormElement.new(p.doc)
+							p.open_elems << child
+							last_opened_elem.append_child(child)
+							if !p.open_elems.has_by_tag_name('template') {
+								p.doc.form = child
+							}
+						}
+					}
+					'li' {
+						// Adam: I did not understand the documentation for this at all. So this may or may not work.
+						p.frameset_ok = .not_ok
+						mut i := p.open_elems.len - 1
+						mut node := p.open_elems[i]
+						node_name := &dom.HTMLElement(node).local_name
+						done := fn [mut p] () {
+							// todo: has_element_in_scope
+							// if p.has_element_in_button_scope('p') {
+							// 	p.close_element('p')
+							// }
+							_ := p // this is just a placeholder to get rid of the warning the p is unused
+						}
+						// "if node is in the special category, but is not an address, div or p element, then jump to done step"
+						node_in_special_category := tag_name in parser.special_tag_names && node_name !in ['address', 'div', 'p']
+						if node_in_special_category {
+							done()
+						} else {
+							i--
+							node = p.open_elems[i]
+							for {
+								p.generate_implied_end_tags(exclude: ['li'])
+								if &dom.HTMLElement(p.open_elems.last()).local_name != 'li' {
+									put(
+										typ: .warning
+										text: 'Unexpected start tag <li>.'
+									)
+								}
+								for p.open_elems.len > 0 {
+									if &dom.HTMLElement(p.open_elems.last()).local_name == 'li' {
+										break
+									}
+									_ := p.open_elems.pop()
+								}
+								i = p.open_elems.len - i - 1
+								node = p.open_elems[i]
+								break
+							}
+						}
+						mut last_opened_elem := p.open_elems.last()
+						mut child := dom.HTMLLIElement.new(p.doc)
+						p.open_elems << child
+						last_opened_elem.append_child(child)
+					}
+					else {
+						p.reconstruct_active_formatting_elements()
+						mut last_opened_elem := p.open_elems.last()
+						mut child := dom.HTMLElement.new(p.doc, tag_name)
+						p.open_elems << child
+						last_opened_elem.append_child(child)
+					}
 				}
 			} else { // end tag
 				match tag_name {
 					'template' {
 						p.in_head_insertion_mode()
 					}
-					else {}
+					'body' {
+						if false /* !p.has_element_in_scope('body') */ {
+							put(
+								typ: .warning
+								text: 'Unexpected end tag </body>: ignoring token.'
+							)
+						} else {
+							// Otherwise, if there is a node in the stack of open elements that is not either a dd element,
+							// a dt element, an li element, an optgroup element, an option element, a p element, an rb element,
+							// an rp element, an rt element, an rtc element, a tbody element, a td element, a tfoot element, a
+							// th element, a thead element, a tr element, the body element, or the html element, then this is
+							// a parse error.
+							not_these_elements := !p.open_elems.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
+							if p.open_elems.len > 1 && not_these_elements {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </body>.'
+								)
+							} else {
+								p.insertion_mode = .after_body
+							}
+						}
+					}
+					'html' {
+						if false /* !p.has_element_in_scope('body') */ {
+							put(
+								typ: .warning
+								text: 'Unexpected end tag </html>: ignoring token.'
+							)
+						} else {
+							// Otherwise, if there is a node in the stack of open elements that is not either a dd element,
+							// a dt element, an li element, an optgroup element, an option element, a p element, an rb element,
+							// an rp element, an rt element, an rtc element, a tbody element, a td element, a tfoot element, a
+							// th element, a thead element, a tr element, the body element, or the html element, then this is
+							// a parse error.
+							not_these_elements := !p.open_elems.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
+							if p.open_elems.len > 1 && not_these_elements {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </html>.'
+								)
+							} else {
+								p.insertion_mode = .after_body
+							}
+							p.reconsume_token = true
+						}
+					}
+					else {
+						mut i := p.open_elems.len - 1
+						mut node := p.open_elems[i]
+						mut node_name := &dom.HTMLElement(node).local_name
+						for {
+							if node_name == tag_name {
+								p.generate_implied_end_tags(exclude: [tag_name])
+								if voidptr(p.open_elems.last()) == voidptr(node) {
+									put(
+										typ: .warning
+										text: 'Unexpected end tag </${tag_name}>.'
+									)
+								}
+								for p.open_elems.len > 0 {
+									popped := p.open_elems.pop()
+									if voidptr(popped) == voidptr(node) {
+										break
+									}
+								}
+							} else if node_name in parser.special_tag_names {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </${tag_name}>.'
+								)
+								break
+							} else {
+								i = p.open_elems.len - i - 1
+								node = p.open_elems[i]
+								node_name = &dom.HTMLElement(node).local_name
+							}
+						}
+					}
 				}
 			}
 		}
-		else {
-			println('in body else not implemented @ parser.v:' + @LINE)
+		EOFToken {
+			if p.template_insertion_modes.len > 1 {
+				p.in_template_insertion_mode()
+			} else {
+				// 1) If there is a node in the stack of open elements that is not either a dd element, a dt element, an
+				// li element, a p element, a tbody element, a td element, a tfoot element, a th element, a thead element,
+				// a tr element, the body element, or the html element, then this is a parse error.
+				not_these_elements := !p.open_elems.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
+				if p.open_elems.len > 1 && not_these_elements {
+					put(
+						typ: .warning
+						text: 'Unexpected EOF token.'
+					)
+				}
+
+				// 2) Stop Parsing
+				return
+			}
 		}
 	}
+}
+
+fn (mut p Parser) in_template_insertion_mode() {
+	put(
+		typ: .warning
+		text: 'todo: implement in_template_insertion_mode'
+	)
 }
 
 // insert_comment adds a comment to the last opened element (and always assumes
@@ -1041,12 +1310,29 @@ __global:
 	exclude []string
 }
 
+// https://html.spec.whatwg.org/multipage/parsing.html#generate-implied-end-tags
+fn (mut p Parser) generate_implied_end_tags(params GenerateImpliedTagsParams) {
+	if p.open_elems.len == 0 {
+		return
+	}
+
+	mut node := &dom.HTMLElement(p.open_elems.last())
+	for node.local_name in ['dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc']
+		&& node.local_name !in params.exclude {
+		_ := p.open_elems.pop()
+	}
+}
+
 // https://html.spec.whatwg.org/multipage/parsing.html#closing-elements-that-have-implied-end-tags
-fn (mut p Parser) generate_all_implied_end_tags_thorougly(params GenerateImpliedTagsParams) {
-	put(
-		typ: .warning
-		text: 'todo: implement generate implied end tags'
-	)
+fn (mut p Parser) generate_all_implied_end_tags_thorougly() {
+	if p.open_elems.len == 0 {
+		return
+	}
+
+	mut node := &dom.HTMLElement(p.open_elems.last())
+	for node.local_name in ['caption', 'colgroup', 'dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'] {
+		_ := p.open_elems.pop()
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#clear-the-list-of-active-formatting-elements-up-to-the-last-marker
