@@ -200,7 +200,7 @@ pub fn (mut p Parser) parse() &dom.Document {
 			.@none {}
 			.after_after_body {}
 			.after_after_frameset {}
-			.after_body {}
+			.after_body { p.in_body_insertion_mode() }
 			.after_frameset {}
 			.after_head { p.after_head_insertion_mode() }
 			.before_head { p.before_head_insertion_mode() }
@@ -721,7 +721,99 @@ fn (mut p Parser) in_head_no_script_insertion_mode() {
 }
 
 fn (mut p Parser) after_head_insertion_mode() {
+	anything_else := fn [mut p] () {
+		mut child := dom.HTMLBodyElement.new(p.doc)
+		p.doc.body = &dom.HTMLElement(child)
+		mut last_opened_element := p.open_elems.last()
+		last_opened_element.append_child(child)
+		p.open_elems << child
+		p.insertion_mode = .in_body
+	}
 
+	match mut p.current_token {
+		CharacterToken {
+			if p.current_token in parser.whitespace {
+				p.insert_text(p.current_token.str())
+			}
+		}
+		CommentToken {
+			p.insert_comment()
+		}
+		DoctypeToken {
+			put(
+				typ: .warning
+				text: 'Unexpected doctype token: ignoring token.'
+			)
+		}
+		TagToken {
+			tag_name := p.current_token.name()
+			if p.current_token.is_start {
+				if tag_name == 'html' {
+					p.in_body_insertion_mode()
+				} else if tag_name == 'body' {
+					mut child := dom.HTMLBodyElement.new(p.doc)
+					p.doc.body = &dom.HTMLElement(child)
+					mut last_opened_element := p.open_elems.last()
+					last_opened_element.append_child(child)
+					p.open_elems << child
+					p.frameset_ok = .not_ok
+					p.insertion_mode = .in_body
+				} else if tag_name == 'frameset' {
+					mut child := dom.HTMLFrameSetElement.new(p.doc)
+					p.open_elems << child
+					mut last_opened_element := p.open_elems.last()
+					last_opened_element.append_child(child)
+					p.insertion_mode = .in_frameset
+				} else if tag_name in ['base', 'basefont', 'bgsound', 'link', 'meta', 'noframes', 'script', 'style', 'template', 'title'] {
+					put(
+						typ: .warning
+						text: 'Unexpected start tag <${tag_name}>: ignoring token.'
+					)
+					if head := p.doc.head {
+						p.open_elems << head
+						p.in_head_insertion_mode()
+						for p.open_elems.len > 0 {
+							if voidptr(p.open_elems.last()) == voidptr(head) {
+								p.open_elems.pop()
+								break
+							}
+						}
+						put(
+							typ: .warning
+							text: 'No head element found in document.'
+						)
+					} else {
+						put(
+							typ: .warning
+							text: 'No head element found in document.'
+						)
+					}
+				} else if tag_name == 'head' {
+					put(
+						typ: .warning
+						text: 'Unexpected start tag <head>: ignoring token.'
+					)
+				} else {
+					anything_else()
+				}
+				
+			} else { // end tag
+				if tag_name == 'template' {
+					p.in_head_insertion_mode()
+				} else if tag_name in ['body', 'html', 'br'] {
+					anything_else()
+				} else {
+					put(
+						typ: .warning
+						text: 'Unexpected end tag </${tag_name}>: ignoring token.'
+					)
+				}
+			}
+		}
+		else {
+			anything_else()
+		}
+	}
 }
 
 fn (mut p Parser) in_body_insertion_mode() {}
@@ -831,12 +923,12 @@ fn (mut p Parser) reset_insertion_mode_appropriately() {
 				p.insertion_mode = .in_select
 				return
 			}
-			mut ancestor := p.open_elems.first()
-			if mut ancestor is dom.HTMLTemplateElement {
+			ancestor := p.open_elems.first()
+			if ancestor is dom.HTMLTemplateElement {
 				p.insertion_mode = .in_select
 				return
 			}
-			if mut ancestor is dom.HTMLTableElement {
+			if ancestor is dom.HTMLTableElement {
 				p.insertion_mode = .in_select_in_table
 				return
 			}
