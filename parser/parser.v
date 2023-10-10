@@ -269,6 +269,9 @@ fn (mut p Parser) before_html_insertion_mode() {
 				if p.current_token.name() == 'html' {
 					mut child := dom.HTMLHtmlElement.new(p.doc)
 					p.doc.append_child(child)
+					for attribute in p.current_token.attributes {
+						child.attributes[attribute.name()] = attribute.value()
+					}
 					p.open_elems << child
 					p.insertion_mode = .before_head
 				} else {
@@ -408,6 +411,9 @@ fn (mut p Parser) before_head_insertion_mode() {
 					mut last := p.open_elems.last()
 					p.doc.head = child
 					last.append_child(child)
+					for attribute in p.current_token.attributes {
+						child.attributes[attribute.name()] = attribute.value()
+					}
 					p.open_elems << child
 					p.insertion_mode = .in_head
 					return
@@ -502,6 +508,9 @@ fn (mut p Parser) in_head_insertion_mode() {
 				} else if tag_name == 'meta' {
 					mut child := dom.HTMLMetaElement.new(p.doc)
 					last_opened_elem.append_child(child)
+					for attribute in p.current_token.attributes {
+						child.attributes[attribute.name()] = attribute.value()
+					}
 					// Do not add to open elems per spec: "immediately pop
 					// the current node off the stack of open elements."
 					// We have not pushed it yet; no pop is needed.
@@ -515,6 +524,9 @@ fn (mut p Parser) in_head_insertion_mode() {
 						local_name: 'title'
 					}
 					last_opened_elem.append_child(child)
+					for attribute in p.current_token.attributes {
+						child.attributes[attribute.name()] = attribute.value()
+					}
 					p.open_elems << child
 					p.tokenizer.state = .rcdata
 					p.original_insertion_mode = p.insertion_mode
@@ -546,6 +558,9 @@ fn (mut p Parser) in_head_insertion_mode() {
 						}
 					}
 					last_opened_elem.append_child(child)
+					for attribute in p.current_token.attributes {
+						child.attributes[attribute.name()] = attribute.value()
+					}
 					p.open_elems << child
 					p.tokenizer.state = .rawtext
 					p.original_insertion_mode = p.insertion_mode
@@ -557,6 +572,9 @@ fn (mut p Parser) in_head_insertion_mode() {
 						local_name: 'noscript'
 					}
 					last_opened_elem.append_child(child)
+					for attribute in p.current_token.attributes {
+						child.attributes[attribute.name()] = attribute.value()
+					}
 					p.insertion_mode = .in_head_no_script
 					return
 				} else if tag_name == 'script' {
@@ -571,6 +589,9 @@ fn (mut p Parser) in_head_insertion_mode() {
 					// cross-origin scripts inserted via document.write() under slow network conditions,
 					// or when the page has already taken a long time to load.)"
 					last_opened_elem.append_child(child)
+					for attribute in p.current_token.attributes {
+						child.attributes[attribute.name()] = attribute.value()
+					}
 					p.open_elems << child
 					p.tokenizer.state = .script_data
 					p.original_insertion_mode = p.insertion_mode
@@ -755,6 +776,9 @@ fn (mut p Parser) after_head_insertion_mode() {
 					p.doc.body = &dom.HTMLElement(child)
 					mut last_opened_element := p.open_elems.last()
 					last_opened_element.append_child(child)
+					for attribute in p.current_token.attributes {
+						child.attributes[attribute.name()] = attribute.value()
+					}
 					p.open_elems << child
 					p.frameset_ok = .not_ok
 					p.insertion_mode = .in_body
@@ -763,6 +787,9 @@ fn (mut p Parser) after_head_insertion_mode() {
 					p.open_elems << child
 					mut last_opened_element := p.open_elems.last()
 					last_opened_element.append_child(child)
+					for attribute in p.current_token.attributes {
+						child.attributes[attribute.name()] = attribute.value()
+					}
 					p.insertion_mode = .in_frameset
 				} else if tag_name in ['base', 'basefont', 'bgsound', 'link', 'meta', 'noframes', 'script', 'style', 'template', 'title'] {
 					put(
