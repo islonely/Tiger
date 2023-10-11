@@ -12,3 +12,4 @@ vls.log
 .ilk
 .pdb
 *.def
+.editorconfig
