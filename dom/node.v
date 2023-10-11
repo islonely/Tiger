@@ -136,6 +136,8 @@ fn (n NodeInterface) recur_pretty_str(depth int, depth_size int) string {
 			':"${child.text}"'
 		} else if child is DocumentType {
 			':${child.name}'
+		} else if child is Text {
+			':"${child.data}"'
 		} else {
 			':<no_name>'
 		}

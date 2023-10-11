@@ -50,7 +50,7 @@ pub mut:
 	ready_state               DocumentReadyState
 	title                     string
 	dir                       string
-	body                      ?&HTMLElement
+	body                      ?&HTMLBodyElement
 	head                      ?&HTMLHeadElement
 	form                      ?&HTMLFormElement
 	// images HTMLCollection

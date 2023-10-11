@@ -2,6 +2,7 @@ module parser
 
 import dom
 import net.http
+import term
 
 // DOCTYPE conditions; see `fn Parser.initial_insertion_mode()`
 const (
@@ -147,7 +148,8 @@ pub type OpenElements = []&dom.NodeInterface
 pub fn (open_elements OpenElements) has_by_tag_name(tag_names ...string) bool {
 	for element in open_elements {
 		el := &dom.HTMLElement(element)
-		println(el.local_name)
+		// todo: THIS FUNCTION DOES NOT WORK!
+		// println(term.bright_bg_green(el.local_name))
 		if el.local_name in tag_names {
 			return true
 		}
@@ -219,9 +221,8 @@ pub fn Parser.from_url(url string) !Parser {
 // the document tree of the parsed content or `none`.
 pub fn (mut p Parser) parse() &dom.Document {
 	for p.tokenizer.state != .eof {
-		println(p.current_token)
 		match p.insertion_mode {
-			.@none {}
+			.@none { return p.doc}
 			.after_after_body {}
 			.after_after_frameset {}
 			.after_body { p.in_body_insertion_mode() }
@@ -230,7 +231,7 @@ pub fn (mut p Parser) parse() &dom.Document {
 			.before_head { p.before_head_insertion_mode() }
 			.before_html { p.before_html_insertion_mode() }
 			.initial { p.initial_insertion_mode() }
-			.in_body {}
+			.in_body { p.in_body_insertion_mode() }
 			.in_caption {}
 			.in_cell {}
 			.in_column_group {}
@@ -244,7 +245,7 @@ pub fn (mut p Parser) parse() &dom.Document {
 			.in_table_body {}
 			.in_table_text {}
 			.in_template { p.in_template_insertion_mode() }
-			.text {}
+			.text { p.text_insertion_mode() }
 		}
 
 		if p.reconsume_token {
@@ -769,7 +770,7 @@ fn (mut p Parser) in_head_no_script_insertion_mode() {
 fn (mut p Parser) after_head_insertion_mode() {
 	anything_else := fn [mut p] () {
 		mut child := dom.HTMLBodyElement.new(p.doc)
-		p.doc.body = &dom.HTMLElement(child)
+		p.doc.body = child
 		mut last_opened_element := p.open_elems.last()
 		last_opened_element.append_child(child)
 		p.open_elems << child
@@ -798,7 +799,7 @@ fn (mut p Parser) after_head_insertion_mode() {
 					p.in_body_insertion_mode()
 				} else if tag_name == 'body' {
 					mut child := dom.HTMLBodyElement.new(p.doc)
-					p.doc.body = &dom.HTMLElement(child)
+					p.doc.body = child
 					mut last_opened_element := p.open_elems.last()
 					last_opened_element.append_child(child)
 					for attribute in p.current_token.attributes {
@@ -1178,36 +1179,8 @@ fn (mut p Parser) in_body_insertion_mode() {
 						}
 					}
 					else {
-						mut i := p.open_elems.len - 1
-						mut node := p.open_elems[i]
-						mut node_name := &dom.HTMLElement(node).local_name
-						for {
-							if node_name == tag_name {
-								p.generate_implied_end_tags(exclude: [tag_name])
-								if voidptr(p.open_elems.last()) == voidptr(node) {
-									put(
-										typ: .warning
-										text: 'Unexpected end tag </${tag_name}>.'
-									)
-								}
-								for p.open_elems.len > 0 {
-									popped := p.open_elems.pop()
-									if voidptr(popped) == voidptr(node) {
-										break
-									}
-								}
-							} else if node_name in parser.special_tag_names {
-								put(
-									typ: .warning
-									text: 'Unexpected end tag </${tag_name}>.'
-								)
-								break
-							} else {
-								i = p.open_elems.len - i - 1
-								node = p.open_elems[i]
-								node_name = &dom.HTMLElement(node).local_name
-							}
-						}
+						// todo: this is not spec compliant. It assumes well-formed HTML.
+						_ := p.open_elems.pop()
 					}
 				}
 			}
@@ -1239,6 +1212,50 @@ fn (mut p Parser) in_template_insertion_mode() {
 		typ: .warning
 		text: 'todo: implement in_template_insertion_mode'
 	)
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incdata
+fn (mut p Parser) text_insertion_mode() {
+	anything_else := fn [mut p] () {
+		put(
+			typ: .warning
+			text: 'Unexpected token: cannot continue parsing.'
+		)
+		p.insertion_mode = .@none
+	}
+
+	match mut p.current_token {
+		CharacterToken {
+			p.insert_text(p.current_token.str())
+		}
+		EOFToken {
+			put(
+				typ: .warning
+				text: 'Unexpected EOF token.'
+			)
+			if &dom.HTMLElement(p.open_elems.last()).local_name == 'script' {
+				mut script := &dom.HTMLScriptElement(p.open_elems.pop())
+				script.already_started = true
+			}
+		}
+		TagToken {
+			if p.current_token.is_start {
+				anything_else()
+			} else { // end tag
+				if p.current_token.name() == 'script' {
+					// todo: end tag script in text insertion mode
+					_ := p.open_elems.pop()
+				} else {
+					_ := p.open_elems.pop()
+					p.insertion_mode = p.original_insertion_mode
+					p.original_insertion_mode = .@none
+				}
+			}
+		}
+		else {
+			anything_else()
+		}
+	}
 }
 
 // insert_comment adds a comment to the last opened element (and always assumes

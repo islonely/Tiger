@@ -71,7 +71,7 @@ pub fn (mut element Element) to_html(depth int) string {
 			if mut child_node is Element {
 				builder.write_string(child_node.to_html(depth + 1))
 			} else if mut child_node is Text {
-				builder.write_string(child_node.data)
+				builder.write_string('\t'.repeat(depth + 1) + child_node.data + '\n')
 			} else if mut child_node is CommentNode {
 				builder.write_string('<!--${child_node.text}-->')
 			}
