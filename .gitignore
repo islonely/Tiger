@@ -11,3 +11,4 @@ vls.log
 .idea/
 .ilk
 .pdb
+*.def
