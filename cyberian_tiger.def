@@ -1,5 +1,0 @@
-LIBRARY cyberian_tiger.exe
-
-EXPORTS
-__bt_init
-tcc_backtrace
