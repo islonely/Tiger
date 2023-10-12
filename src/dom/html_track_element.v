@@ -24,6 +24,6 @@ pub mut:
 pub fn HTMLTrackElement.new(owner_document &Document) &HTMLTrackElement {
 	return &HTMLTrackElement{
 		owner_document: owner_document
-		local_name: 'track'
+		tag_name: 'track'
 	}
 }

@@ -17,6 +17,6 @@ pub mut:
 pub fn HTMLMeterElement.new(owner_document &Document) &HTMLMeterElement {
 	return &HTMLMeterElement{
 		owner_document: owner_document
-		local_name: 'meter'
+		tag_name: 'meter'
 	}
 }

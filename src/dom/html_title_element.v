@@ -11,7 +11,7 @@ pub mut:
 pub fn HTMLTitleElement.new(owner_document &Document, title string) &HTMLTitleElement {
 	return &HTMLTitleElement{
 		owner_document: owner_document
-		local_name: 'title'
+		tag_name: 'title'
 		text: title
 	}
 }

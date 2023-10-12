@@ -16,6 +16,6 @@ pub mut:
 pub fn HTMLVideoElement.new(owner_document &Document) &HTMLVideoElement {
 	return &HTMLVideoElement{
 		owner_document: owner_document
-		local_name: 'video'
+		tag_name: 'video'
 	}
 }

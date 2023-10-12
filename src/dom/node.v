@@ -122,7 +122,7 @@ pub fn (mut n NodeInterface) append_child(child &NodeInterface) {
 }
 
 // recur_pretty_str creates a pretty list of all the descendants of the node.
-fn (n NodeInterface) recur_pretty_str(depth int, depth_size int) string {
+fn (n NodeInterface) recur_pretty_str(depth int) string {
 	mut bldr := strings.new_builder(n.child_nodes.len * 50)
 	for child in n.child_nodes {
 		name := if child is Element {
@@ -141,8 +141,9 @@ fn (n NodeInterface) recur_pretty_str(depth int, depth_size int) string {
 		} else {
 			':<no_name>'
 		}
-		bldr.write_string(' '.repeat(depth * depth_size) + '|_${child.node_type}${name}\n')
-		bldr.write_string(child.recur_pretty_str(depth + 1, depth_size))
+		prefix := '  '.repeat(depth)
+		bldr.write_string('${prefix}|__${child.node_type}${name}\n')
+		bldr.write_string(child.recur_pretty_str(depth + 1))
 	}
 	return bldr.str()
 }

@@ -12,6 +12,6 @@ pub mut:
 pub fn HTMLDivElement.new(owner_document &Document) &HTMLDivElement {
 	return &HTMLDivElement{
 		owner_document: owner_document
-		local_name: 'div'
+		tag_name: 'div'
 	}
 }

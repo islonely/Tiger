@@ -12,6 +12,6 @@ pub mut:
 pub fn HTMLTableCaptionElement.new(owner_document &Document) &HTMLTableCaptionElement {
 	return &HTMLTableCaptionElement{
 		owner_document: owner_document
-		local_name: 'caption'
+		tag_name: 'caption'
 	}
 }

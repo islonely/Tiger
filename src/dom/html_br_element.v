@@ -12,6 +12,6 @@ pub mut:
 pub fn HTMLBRElement.new(owner_document &Document) &HTMLBRElement {
 	return &HTMLBRElement{
 		owner_document: owner_document
-		local_name: 'br'
+		tag_name: 'br'
 	}
 }

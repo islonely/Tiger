@@ -12,6 +12,6 @@ pub mut:
 pub fn HTMLDialogElement.new(owner_document &Document) &HTMLDialogElement {
 	return &HTMLDialogElement{
 		owner_document: owner_document
-		local_name: 'dialog'
+		tag_name: 'dialog'
 	}
 }

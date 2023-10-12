@@ -13,6 +13,6 @@ pub mut:
 pub fn HTMLHeadingElement.new(owner_document &Document, size int) &HTMLHeadingElement {
 	return &HTMLHeadingElement{
 		owner_document: owner_document
-		local_name: 'h${size}'
+		tag_name: 'h${size}'
 	}
 }

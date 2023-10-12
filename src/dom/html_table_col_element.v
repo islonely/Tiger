@@ -17,6 +17,6 @@ pub mut:
 pub fn HTMLTableColElement.new(owner_document &Document) &HTMLTableColElement {
 	return &HTMLTableColElement{
 		owner_document: owner_document
-		local_name: 'col'
+		tag_name: 'col'
 	}
 }

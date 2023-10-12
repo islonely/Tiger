@@ -57,6 +57,6 @@ pub mut:
 pub fn HTMLInputElement.new(owner_document &Document) &HTMLInputElement {
 	return &HTMLInputElement{
 		owner_document: owner_document
-		local_name: 'input'
+		tag_name: 'input'
 	}
 }

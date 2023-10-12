@@ -9,6 +9,6 @@ pub struct HTMLSpanElement {
 pub fn HTMLSpanElement.new(owner_document &Document) &HTMLSpanElement {
 	return &HTMLSpanElement{
 		owner_document: owner_document
-		local_name: 'span'
+		tag_name: 'span'
 	}
 }

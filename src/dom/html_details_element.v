@@ -11,6 +11,6 @@ pub mut:
 pub fn HTMLDetailsElement.new(owner_document &Document) &HTMLDetailsElement {
 	return &HTMLDetailsElement{
 		owner_document: owner_document
-		local_name: 'details'
+		tag_name: 'details'
 	}
 }

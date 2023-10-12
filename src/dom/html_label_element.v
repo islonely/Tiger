@@ -13,6 +13,6 @@ pub mut:
 pub fn HTMLLabelElement.new(owner_document &Document) &HTMLLabelElement {
 	return &HTMLLabelElement{
 		owner_document: owner_document
-		local_name: 'label'
+		tag_name: 'label'
 	}
 }

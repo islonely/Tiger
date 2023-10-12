@@ -12,6 +12,6 @@ pub mut:
 pub fn HTMLModElement.new(owner_document &Document) &HTMLModElement {
 	return &HTMLModElement{
 		owner_document: owner_document
-		local_name: 'mod'
+		tag_name: 'mod'
 	}
 }

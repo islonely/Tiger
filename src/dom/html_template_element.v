@@ -11,6 +11,6 @@ pub mut:
 pub fn HTMLTemplateElement.new(owner_document &Document) &HTMLTemplateElement {
 	return &HTMLTemplateElement{
 		owner_document: owner_document
-		local_name: 'template'
+		tag_name: 'template'
 	}
 }

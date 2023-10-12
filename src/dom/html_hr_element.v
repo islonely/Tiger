@@ -16,6 +16,6 @@ pub mut:
 pub fn HTMLHRElement.new(owner_document &Document) &HTMLHRElement {
 	return &HTMLHRElement{
 		owner_document: owner_document
-		local_name: 'hr'
+		tag_name: 'hr'
 	}
 }

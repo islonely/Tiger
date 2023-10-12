@@ -16,6 +16,6 @@ pub mut:
 pub fn HTMLMetaElement.new(owner_document &Document) &HTMLMetaElement {
 	return &HTMLMetaElement{
 		owner_document: owner_document
-		local_name: 'meta'
+		tag_name: 'meta'
 	}
 }

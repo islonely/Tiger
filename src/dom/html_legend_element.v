@@ -13,6 +13,6 @@ pub mut:
 pub fn HTMLLegendElement.new(owner_document &Document) &HTMLLegendElement {
 	return &HTMLLegendElement{
 		owner_document: owner_document
-		local_name: 'legend'
+		tag_name: 'legend'
 	}
 }

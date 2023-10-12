@@ -12,6 +12,6 @@ pub mut:
 pub fn HTMLParagraphElement.new(owner_document &Document) &HTMLParagraphElement {
 	return &HTMLParagraphElement{
 		owner_document: owner_document
-		local_name: 'p'
+		tag_name: 'p'
 	}
 }

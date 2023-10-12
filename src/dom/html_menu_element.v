@@ -12,6 +12,6 @@ pub mut:
 pub fn HTMLMenuElement.new(owner_document &Document) &HTMLMenuElement {
 	return &HTMLMenuElement{
 		owner_document: owner_document
-		local_name: 'menu'
+		tag_name: 'menu'
 	}
 }

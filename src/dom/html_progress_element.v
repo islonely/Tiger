@@ -14,6 +14,6 @@ pub mut:
 pub fn HTMLProgressElement.new(owner_document &Document) &HTMLProgressElement {
 	return &HTMLProgressElement{
 		owner_document: owner_document
-		local_name: 'progress'
+		tag_name: 'progress'
 	}
 }

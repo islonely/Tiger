@@ -27,6 +27,6 @@ pub mut:
 pub fn HTMLSelectElement.new(owner_document &Document) &HTMLSelectElement {
 	return &HTMLSelectElement{
 		owner_document: owner_document
-		local_name: 'select'
+		tag_name: 'select'
 	}
 }

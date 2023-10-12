@@ -13,6 +13,6 @@ pub mut:
 pub fn HTMLLIElement.new(owner_document &Document) &HTMLLIElement {
 	return &HTMLLIElement{
 		owner_document: owner_document
-		local_name: 'li'
+		tag_name: 'li'
 	}
 }

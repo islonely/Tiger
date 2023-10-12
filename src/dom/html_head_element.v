@@ -9,6 +9,6 @@ pub struct HTMLHeadElement {
 pub fn HTMLHeadElement.new(owner_document &Document) &HTMLHeadElement {
 	return &HTMLHeadElement{
 		owner_document: owner_document
-		local_name: 'head'
+		tag_name: 'head'
 	}
 }

@@ -15,6 +15,6 @@ pub mut:
 pub fn HTMLOListElement.new(owner_document &Document) &HTMLOListElement {
 	return &HTMLOListElement{
 		owner_document: owner_document
-		local_name: 'ol'
+		tag_name: 'ol'
 	}
 }

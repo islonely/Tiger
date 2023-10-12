@@ -129,5 +129,6 @@ pub fn (doc Document) pretty_print() {
 [inline]
 pub fn (doc Document) pretty_string() string {
 	uri := if doc.base_uri != '' { doc.base_uri } else { '<no_uri>' }
-	return 'document@${uri}\n' + NodeInterface(doc).recur_pretty_str(1, 2)
+	mut doc_as_node := &NodeInterface(doc)
+	return 'document@${uri}\n' + doc_as_node.recur_pretty_str(1)
 }

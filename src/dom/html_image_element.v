@@ -35,6 +35,6 @@ pub mut:
 pub fn HTMLImageElement.new(owner_document &Document) &HTMLImageElement {
 	return &HTMLImageElement{
 		owner_document: owner_document
-		local_name: 'img'
+		tag_name: 'img'
 	}
 }

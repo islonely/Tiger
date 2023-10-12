@@ -12,7 +12,7 @@ pub mut:
 pub fn HTMLHtmlElement.new(owner_document &Document) &HTMLHtmlElement {
 	return &HTMLHtmlElement{
 		owner_document: owner_document
-		local_name: 'html'
-		namespace_uri: dom.namespace['html']
+		tag_name: 'html'
+		namespace_uri: namespace['html']
 	}
 }

@@ -33,6 +33,6 @@ pub mut:
 pub fn HTMLObjectElement.new(owner_document &Document) &HTMLObjectElement {
 	return &HTMLObjectElement{
 		owner_document: owner_document
-		local_name: 'object'
+		tag_name: 'object'
 	}
 }

@@ -24,6 +24,6 @@ pub mut:
 pub fn HTMLButtonElement.new(owner_document &Document) &HTMLButtonElement {
 	return &HTMLButtonElement{
 		owner_document: owner_document
-		local_name: 'button'
+		tag_name: 'button'
 	}
 }

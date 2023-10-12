@@ -12,6 +12,6 @@ pub mut:
 pub fn HTMLFrameSetElement.new(owner_document &Document) &HTMLFrameSetElement {
 	return &HTMLFrameSetElement{
 		owner_document: owner_document
-		local_name: 'frameset'
+		tag_name: 'frameset'
 	}
 }

@@ -18,6 +18,6 @@ pub mut:
 pub fn HTMLFieldSetElement.new(owner_document &Document) &HTMLFieldSetElement {
 	return &HTMLFieldSetElement{
 		owner_document: owner_document
-		local_name: 'fieldset'
+		tag_name: 'fieldset'
 	}
 }

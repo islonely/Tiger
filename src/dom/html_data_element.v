@@ -11,6 +11,6 @@ pub mut:
 pub fn HTMLDataElement.new(owner_document &Document) &HTMLDataElement {
 	return &HTMLDataElement{
 		owner_document: owner_document
-		local_name: 'data'
+		tag_name: 'data'
 	}
 }

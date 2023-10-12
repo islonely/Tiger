@@ -9,6 +9,6 @@ pub struct HTMLPictureElement {
 pub fn HTMLPictureElement.new(owner_document &Document) &HTMLPictureElement {
 	return &HTMLPictureElement{
 		owner_document: owner_document
-		local_name: 'picture'
+		tag_name: 'picture'
 	}
 }

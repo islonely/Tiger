@@ -59,7 +59,7 @@ fn (e Element) has_attributes() bool {
 // to_html converts the element into HTML.
 pub fn (mut element Element) to_html(depth int) string {
 	mut builder := strings.new_builder(1000)
-	builder.write_string('\t'.repeat(depth) + '<${element.local_name}')
+	builder.write_string('\t'.repeat(depth) + '<${element.tag_name}')
 	for attribute_name, attribute_value in element.attributes {
 		builder.write_string(' ${attribute_name}="${attribute_value}"')
 	}
@@ -78,6 +78,6 @@ pub fn (mut element Element) to_html(depth int) string {
 		}
 		builder.write_string('\t'.repeat(depth))
 	}
-	builder.writeln('</${element.local_name}>')
+	builder.writeln('</${element.tag_name}>')
 	return builder.str()
 }

@@ -11,6 +11,6 @@ pub mut:
 pub fn HTMLDataListElement.new(owner_document &Document) &HTMLDataListElement {
 	return &HTMLDataListElement{
 		owner_document: owner_document
-		local_name: 'datalist'
+		tag_name: 'datalist'
 	}
 }

@@ -27,6 +27,6 @@ pub mut:
 pub fn HTMLTableCellElement.new(owner_document &Document) &HTMLTableCellElement {
 	return &HTMLTableCellElement{
 		owner_document: owner_document
-		local_name: 'td'
+		tag_name: 'td'
 	}
 }

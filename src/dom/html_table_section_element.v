@@ -16,6 +16,6 @@ pub mut:
 pub fn HTMLTableSectionElement.new(owner_document &Document, name string) &HTMLTableSectionElement {
 	return &HTMLTableSectionElement{
 		owner_document: owner_document
-		local_name: name
+		tag_name: name
 	}
 }

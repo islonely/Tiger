@@ -53,7 +53,7 @@ __global:
 pub fn HTMLScriptElement.new(owner_document &Document) &HTMLScriptElement {
 	return &HTMLScriptElement{
 		owner_document: owner_document
-		local_name: 'script'
+		tag_name: 'script'
 	}
 }
 

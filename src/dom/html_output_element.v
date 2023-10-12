@@ -20,6 +20,6 @@ pub mut:
 pub fn HTMLOutputElement.new(owner_document &Document) &HTMLOutputElement {
 	return &HTMLOutputElement{
 		owner_document: owner_document
-		local_name: 'output'
+		tag_name: 'output'
 	}
 }

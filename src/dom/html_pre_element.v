@@ -12,6 +12,6 @@ pub mut:
 pub fn HTMLPreElement.new(owner_document &Document) &HTMLPreElement {
 	return &HTMLPreElement{
 		owner_document: owner_document
-		local_name: 'pre'
+		tag_name: 'pre'
 	}
 }

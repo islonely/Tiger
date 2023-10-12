@@ -17,6 +17,6 @@ pub mut:
 pub fn HTMLSourceElement.new(owner_document &Document) &HTMLSourceElement {
 	return &HTMLSourceElement{
 		owner_document: owner_document
-		local_name: 'source'
+		tag_name: 'source'
 	}
 }

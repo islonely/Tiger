@@ -12,6 +12,6 @@ pub mut:
 pub fn HTMLCanvasElement.new(owner_document &Document) &HTMLCanvasElement {
 	return &HTMLCanvasElement{
 		owner_document: owner_document
-		local_name: 'canvas'
+		tag_name: 'canvas'
 	}
 }

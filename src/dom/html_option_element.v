@@ -18,6 +18,6 @@ pub mut:
 pub fn HTMLOptionElement.new(owner_document &Document) &HTMLOptionElement {
 	return &HTMLOptionElement{
 		owner_document: owner_document
-		local_name: 'option'
+		tag_name: 'option'
 	}
 }

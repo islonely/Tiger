@@ -30,6 +30,6 @@ pub mut:
 pub fn HTMLLinkElement.new(owner_document &Document) &HTMLLinkElement {
 	return &HTMLLinkElement{
 		owner_document: owner_document
-		local_name: 'link'
+		tag_name: 'link'
 	}
 }

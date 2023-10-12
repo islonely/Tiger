@@ -13,6 +13,6 @@ pub mut:
 pub fn HTMLUListElement.new(owner_document &Document) &HTMLUListElement {
 	return &HTMLUListElement{
 		owner_document: owner_document
-		local_name: 'ul'
+		tag_name: 'ul'
 	}
 }
