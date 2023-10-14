@@ -2,6 +2,7 @@ module parser
 
 import dom
 import net.http
+import term
 
 // DOCTYPE conditions; see `fn Parser.initial_insertion_mode()`
 const (
@@ -772,7 +773,51 @@ fn (mut p Parser) after_head_insertion_mode() {
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody
+[direct_array_access]
 fn (mut p Parser) in_body_insertion_mode() {
+	any_other_end_tag := fn [mut p] (token_tag_name string) {
+		// 1. Initialize node to be the current node (the bottommost node of the stack).
+		mut i := p.open_elems.len - 1
+		mut node := p.open_elems[i]
+		mut tag_name := &dom.HTMLElement(node).tag_name
+		// 2. Loop: If node is an element with the same tag name as the token, then:
+		for {
+			if tag_name == token_tag_name {
+				// 1. Generate implied end tags, except for HTML elements with the same
+				// tag name as the token.
+				p.generate_implied_end_tags(exclude: [token_tag_name])
+				// 2. If node is not the current node, then this is a parse error.
+				if voidptr(node) != p.open_elems.last() {
+					put(
+						typ: .warning
+						text: 'Unexpected end tag </${token_tag_name}>.'
+					)
+				}
+				// 3. Pop all the nodes from the current node up to the node, including
+				// node, then stop these steps.
+				for p.open_elems.len > 0 {
+					popped := p.open_elems.pop()
+					if voidptr(popped) == voidptr(node) {
+						break
+					}
+				}
+			} else {
+				// Otherwise, if node is in the special category, then this is a parse error;
+				// ignore the token, and return.
+				if tag_name in parser.special_tag_names {
+					put(
+						typ: .warning
+						text: 'Unexpected end tag </${token_tag_name}>: ignoring token.'
+					)
+					return
+				}
+				i--
+				node = p.open_elems[i]
+				tag_name = &dom.HTMLElement(node).tag_name
+			}
+		}
+	}
+
 	match mut p.current_token {
 		CharacterToken {
 			if p.current_token == rune(0) {
@@ -1306,9 +1351,76 @@ fn (mut p Parser) in_body_insertion_mode() {
 							p.close_element('li')
 						}
 					}
+					'dd', 'dt' {
+						// If the stack of open elements does not have an element in scope that is an HTML element with the same tag
+						// name as that of the token, then this is a parse error; ignore the token.
+						// if !p.has_element_in_scope(tag_name) {
+						// 	put(
+						// 		typ: .warning
+						// 		text: 'Unexpected end tag </${tag_name}>: ignoring token.'
+						// 	)
+						// 	return
+						// } else 
+						{
+							// 1. Generate implied end tags, except for HTML elements with the same tag name as the token.
+							p.generate_implied_end_tags(exclude: [tag_name])
+							// 2. If the current node is not an HTML element with the same tag name as the token, then this is a parse error.
+							if &dom.HTMLElement(p.open_elems.last()).tag_name != tag_name {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </${tag_name}>.'
+								)
+							}
+							// 3. Pop elements from the stack of open elements until an HTML element with the same tag name as the token has been popped from the stack.
+							for p.open_elems.len > 0 {
+								if &dom.HTMLElement(p.open_elems.last()).tag_name == tag_name {
+									_ := p.open_elems.pop()
+									break
+								}
+								_ := p.open_elems.pop()
+							}
+						}
+					}
+					'h1', 'h2', 'h3', 'h4', 'h5', 'h6' {
+						// If the stack of open elements does not have an element in scope that is an HTML element with the same tag
+						// name as that of the token, then this is a parse error; ignore the token.
+						// if !p.has_element_in_scope(tag_name) {
+						// 	put(
+						// 		typ: .warning
+						// 		text: 'Unexpected end tag </${tag_name}>: ignoring token.'
+						// 	)
+						// 	return
+						// } else 
+						{
+							// 1. Generate implied end tags.
+							p.generate_implied_end_tags()
+							// 2. If the current node is not an HTML element with the same tag name as that of the token,
+							// then this is a parse error.
+							if &dom.HTMLElement(p.open_elems.last()).tag_name != tag_name {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </${tag_name}>.'
+								)
+							}
+							// 3. Pop elements from the stack of open element until an HTML element whose tag name is one of "h1",
+							// "h2", "h3", "h4", "h5", or "h6" has been popped from the stack.
+							for p.open_elems.len > 0 {
+								if &dom.HTMLElement(p.open_elems.last()).tag_name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] {
+									_ := p.open_elems.pop()
+									break
+								}
+								_ := p.open_elems.pop()
+							}
+						}
+					}
+					'sarcasm' {
+						// Take a deep breath.
+						println(term.bright_blue('[PARSER]') + ' Taking a deep breath')
+						println(term.bright_blue('[PARSER]') + ' ε-( ´ ・｀)')
+						any_other_end_tag('sarcasm')
+					}
 					else {
-						// todo: this is not spec compliant. It assumes well-formed HTML.
-						_ := p.open_elems.pop()
+						any_other_end_tag(tag_name)
 					}
 				}
 			}
