@@ -1091,6 +1091,32 @@ fn (mut p Parser) in_body_insertion_mode() {
 						// NOTE: Once a start tag with the tag name "plaintext" has been seen, that will be the last token ever seen other than character
 						// tokens (and the end-of-file token), because there is no way to switch out of the PLAINTEXT state.
 					}
+					'button' {
+						// 1. If the stack of open elements has a button element in scope, then run these substeps:
+						if p.open_elems.has_by_tag_name('button') {
+							// A. Parse error.
+							put(
+								typ: .warning
+								text: 'Unexpected start tag <button>.'
+							)
+							// B. Generate implied end tags.
+							p.generate_implied_end_tags()
+							// C. Pop elements from the stack of open elements until a button element has been popped from the stack.
+							for p.open_elems.len > 0 {
+								if &dom.HTMLElement(p.open_elems.last()).tag_name == 'button' {
+									_ := p.open_elems.pop()
+									break
+								}
+								_ := p.open_elems.pop()
+							}
+						}
+						// 2. Reconstruct the active formatting elements, if any.
+						p.reconstruct_active_formatting_elements()
+						// 3. Insert an HTML element for the token.
+						p.insert_html_element()
+						// 4. Set the frameset-ok flag to "not ok".
+						p.frameset_ok = .not_ok
+					}
 					else {
 						p.reconstruct_active_formatting_elements()
 						p.insert_html_element()
