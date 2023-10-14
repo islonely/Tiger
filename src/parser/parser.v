@@ -1277,6 +1277,35 @@ fn (mut p Parser) in_body_insertion_mode() {
 							}
 						}
 					}
+					'p' {
+						// If the stack of open elements does not have a p element in button scope, then this is a parse error;
+						// insert an HTML element for a "p" start tag token with no attributes.
+						// if !p.has_element_in_button_scope('p') {
+						// 	put(
+						// 		typ: .warning
+						// 		text: 'Unexpected end tag </p>: ignoring token.'
+						// 	)
+						// 	mut child := dom.HTMLElement.new(p.doc, 'p')
+						//  mut last_opened_elem := p.open_elems.last()
+						// 	last_opened_elem.append_child(child)
+						// 	p.open_elems << child
+						// }
+						p.close_paragraph_element()
+					}
+					'li' {
+						// If the stack of open elements does not have an li element in list item scope, then this is a parse error;
+						// ignore the token.
+						// if !p.has_element_in_list_item_scope('li') {
+						// 	put(
+						// 		typ: .warning
+						// 		text: 'Unexpected end tag </li>: ignoring token.'
+						// 	)
+						// 	return
+						// } else 
+						{
+							p.close_element('li')
+						}
+					}
 					else {
 						// todo: this is not spec compliant. It assumes well-formed HTML.
 						_ := p.open_elems.pop()
@@ -1363,6 +1392,33 @@ fn (mut p Parser) text_insertion_mode() {
 [inline]
 fn (mut p Parser) insert_html_element() &dom.Element {
 	return p.insert_foreign_element(dom.NamespaceURI.html)
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#close-a-p-element
+[inline]
+fn (mut p Parser) close_paragraph_element() {
+	p.close_element('p')
+}
+
+fn (mut p Parser) close_element(element_name string) {
+	// 1. Generate implied end tags, except for p elements.
+	p.generate_implied_end_tags(exclude: [element_name])
+	// 2. If the current node is not a p element, then this is a parse error.
+	current_name := &dom.HTMLElement(p.open_elems.last()).tag_name
+	if current_name != element_name {
+		put(
+			typ: .warning
+			text: 'Unexpected end tag </${current_name}>.'
+		)
+	}
+	// 3. Pop elements from the stack of open elements until a p element has been popped from the stack.
+	for p.open_elems.len > 0 {
+		if &dom.HTMLElement(p.open_elems.last()).tag_name == element_name {
+			_ := p.open_elems.pop()
+			break
+		}
+		_ := p.open_elems.pop()
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#insert-a-foreign-element
