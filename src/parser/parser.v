@@ -966,44 +966,130 @@ fn (mut p Parser) in_body_insertion_mode() {
 					}
 					'li' {
 						// Adam: I did not understand the documentation for this at all. So this may or may not work.
+						// 1. Set the frameset-ok flag to "not ok".
 						p.frameset_ok = .not_ok
+						// 2. Initialize node to be the current node (the bottommost node of the stack).
 						mut i := p.open_elems.len - 1
 						mut node := p.open_elems[i]
-						node_name := &dom.HTMLElement(node).tag_name
-						done := fn [mut p] () {
-							// todo: has_element_in_scope
-							// if p.has_element_in_button_scope('p') {
-							// 	p.close_element('p')
-							// }
-							_ := p // this is just a placeholder to get rid of the warning the p is unused
-						}
-						// "if node is in the special category, but is not an address, div or p element, then jump to done step"
-						node_in_special_category := tag_name in parser.special_tag_names && node_name !in ['address', 'div', 'p']
-						if node_in_special_category {
-							done()
-						} else {
-							i--
-							node = p.open_elems[i]
-							for {
+						mut elem := &dom.HTMLElement(node)
+						// 3. Loop: If node is a li element, then run these substeps:
+						for {
+							if elem.tag_name == 'li' {
+								// A. Generate implied end tags, except for li elements.
 								p.generate_implied_end_tags(exclude: ['li'])
+								// B. If the current node is not now an li element, then this is a parse error.
 								if &dom.HTMLElement(p.open_elems.last()).tag_name != 'li' {
 									put(
 										typ: .warning
-										text: 'Unexpected start tag <li>.'
+										text: 'Unexpected start tag <${tag_name}>.'
 									)
 								}
+								// C. Pop elements from the stack of open elements until an li element has been popped from the stack.
 								for p.open_elems.len > 0 {
 									if &dom.HTMLElement(p.open_elems.last()).tag_name == 'li' {
+										_ := p.open_elems.pop()
 										break
 									}
 									_ := p.open_elems.pop()
 								}
-								i = p.open_elems.len - i - 1
-								node = p.open_elems[i]
+								// D. Jump to the step labeled done below.
 								break
 							}
+							// 4. If node is in the special category, but is not an address, div, or p element, then jump to the step labeled done below.
+							else if tag_name in parser.special_tag_names && elem.tag_name !in ['address', 'div', 'p'] {
+								break
+							}
+							// 5. Otherwise, set node to the previous entry in the stack of open elements and return to the step labeled loop.
+							i--
+							node = p.open_elems[i]
+							elem = &dom.HTMLElement(node)
 						}
+						// 6. Done: If the stack of open elements has a p element in button scope, then close a p element.
+						// if p.has_element_in_button_scope('p') {
+						// 	p.close_element('p')
+						// }
+						// 7. Finally, insert an HTML element for the token.
 						p.insert_html_element()
+					}
+					'dd', 'dt' {
+						// 1. Set the frameset-ok flag to "not ok".
+						p.frameset_ok = .not_ok
+						// 2. Initialize node to be the current node (the bottommost node of the stack).
+						mut i := p.open_elems.len - 1
+						mut node := p.open_elems[i]
+						mut elem := &dom.HTMLElement(node)
+						// 3. Loop: If node is a dd element, then run these steps.
+						for {
+							if elem.tag_name == 'dd' {
+								// A. Generate implied end tags, except for dd elements.
+								p.generate_implied_end_tags(exclude: ['dd'])
+								// B. If the current node is not now a dd element, then this is a parse error.
+								if &dom.HTMLElement(p.open_elems.last()).tag_name != 'dd' {
+									put(
+										typ: .warning
+										text: 'Unexpected start tag <${tag_name}>.'
+									)
+								}
+								// C. Pop elements from the stack of open elements until a dd element has been popped from the stack.
+								for p.open_elems.len > 0 {
+									if &dom.HTMLElement(p.open_elems.last()).tag_name == 'dd' {
+										_ := p.open_elems.pop()
+										break
+									}
+									_ := p.open_elems.pop()
+								}
+								// D. Jump to the step labeled done below.
+								break
+							}
+							// 4. If node is a dt element, then run these substeps.
+							else if elem.tag_name == 'dt' {
+								// A. Generate implied end tags, except for dt elements.
+								p.generate_implied_end_tags(exclude: ['dt'])
+								// B. If the current node is not now a dt element, then this is a parse error.
+								if &dom.HTMLElement(p.open_elems.last()).tag_name != 'dt' {
+									put(
+										typ: .warning
+										text: 'Unexpected start tag <${tag_name}>.'
+									)
+								}
+								// C. Pop elements from the stack of open elements until a dt element has been popped from the stack.
+								for p.open_elems.len > 0 {
+									if &dom.HTMLElement(p.open_elems.last()).tag_name == 'dt' {
+										_ := p.open_elems.pop()
+										break
+									}
+									_ := p.open_elems.pop()
+								}
+								// D. Jump to the step labeled done below.
+								break
+							}
+							// 5. If node is in the special category, but is not an address, div, or p element, then jump to the step labeled done below.
+							else if tag_name in parser.special_tag_names && elem.tag_name !in ['address', 'div', 'p'] {
+								break
+							}
+							// 6. Otherwise, set node to the previous entry in the stack of open elements and return to the step labeled loop.
+							i--
+							node = p.open_elems[i]
+							elem = &dom.HTMLElement(node)
+						}
+						// 7. Done: If the stack of open elements has a p element in button scope, then close a p element.
+						// if p.has_element_in_button_scope('p') {
+						// 	p.close_element('p')
+						// }
+						// 8. Finally, insert an HTML element for the token.
+						p.insert_html_element()
+					}
+					'plaintext' {
+						// 1. If the stack of open elements has a p element in button scope, then close a p element.
+						// if p.has_element_in_button_scope('p') {
+						// 	p.close_element('p')
+						// }
+						// 2. Insert an HTML element for the token.
+						p.insert_html_element()
+						// 3. Switch the tokenizer to the PLAINTEXT state.
+						p.tokenizer.state = .plaintext
+						// NOTE: Once a start tag with the tag name "plaintext" has been seen, that will be the last token ever seen other than character
+						// tokens (and the end-of-file token), because there is no way to switch out of the PLAINTEXT state.
 					}
 					else {
 						p.reconstruct_active_formatting_elements()
