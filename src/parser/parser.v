@@ -1179,6 +1179,104 @@ fn (mut p Parser) in_body_insertion_mode() {
 							p.reconsume_token = true
 						}
 					}
+					'address', 'article', 'aside', 'blockquote', 'button', 'center', 'details', 'dialog', 'dir', 'div', 'dl', 'fieldset', 'figcaption', 'figure', 'footer', 'header', 'hgroup', 'listing', 'main', 'menu', 'nav', 'ol', 'pre', 'section', 'summary', 'ul' {
+						// if p.has_element_in_scope(tag_name) {
+						// 	put(
+						// 		typ: .warning
+						// 		text: 'Unexpected end tag </${tag_name}>: ignoring token.'
+						// 	)
+						// 	return
+						// } else
+						{
+							// 1. Generate implied end tags.
+							p.generate_implied_end_tags()
+							// 2. If the current node is not an element with the same tag name as that of the token, then this is a parse error.
+							if &dom.HTMLElement(p.open_elems.last()).tag_name != tag_name {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </${tag_name}>.'
+								)
+							}
+							// 3. Pop elements from the stack of open elements until an element with the same tag name as the token has been popped from the stack.
+							for p.open_elems.len > 0 {
+								if &dom.HTMLElement(p.open_elems.last()).tag_name == tag_name {
+									_ := p.open_elems.pop()
+									break
+								}
+								_ := p.open_elems.pop()
+							}
+						}
+					}
+					'form' {
+						if !p.open_elems.has_by_tag_name('template') {
+							// 1. Let node be the element that is the current node (the bottommost node of the stack).
+							mut node := p.doc.form or {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </form>: ignoring token.'
+								)
+								return
+							}
+							// 2. Set the form element pointer to null.
+							p.doc.form = none
+							// 3. If node is null or if the stack of open element does not hav enode in scope, then this
+							// is a parse error; return and ignore the token.
+							if !p.open_elems.has(node) {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </form>: ignoring token.'
+								)
+								return
+							}
+							// 4. Generate implied end tags.
+							p.generate_implied_end_tags()
+							// 5. If the current node is not node, then this is a parse error.
+							if voidptr(p.open_elems.last()) != voidptr(node) {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </form>.'
+								)
+							}
+							// 6. Remove node from the stack of open elements.
+							// This is ideal, but it's generating a C error.
+							// idx := p.open_elems.index(node)
+							// p.open_elems.delete(idx)
+							for i, val in p.open_elems {
+								if voidptr(node) == voidptr(val) {
+									p.open_elems.delete(i)
+									break
+								}
+							}
+						} else {
+							// If there is a template element on the stack of open elements, then run these substeps instead:
+							// 1. If the stack of open elements does not have a form element in scope, then this is a parse error;
+							// return and ignore the token.
+							if p.open_elems.has_by_tag_name('form') {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </form>: ignoring token.'
+								)
+								return
+							}
+							// 2. Generate implied end tags.
+							p.generate_implied_end_tags()
+							// 3. If the current node is not a form element, then this is a parse error.
+							if &dom.HTMLElement(p.open_elems.last()).tag_name != 'form' {
+								put(
+									typ: .warning
+									text: 'Unexpected end tag </form>.'
+								)
+							}
+							// 4. Pop elements from the stack of open elements until a form element has been popped from the stack.
+							for p.open_elems.len > 0 {
+								if &dom.HTMLElement(p.open_elems.last()).tag_name == 'form' {
+									_ := p.open_elems.pop()
+									break
+								}
+								_ := p.open_elems.pop()
+							}
+						}
+					}
 					else {
 						// todo: this is not spec compliant. It assumes well-formed HTML.
 						_ := p.open_elems.pop()
