@@ -4,6 +4,7 @@ import components
 import dom
 import gg
 import gx
+import parser
 import viewport
 
 const title = 'Cyberian Tiger'
@@ -20,6 +21,9 @@ pub mut:
 	// with a phone aspect ratio and size. This is useful for testing how a
 	// web page will look on different devices without having to actually
 	// switch between devices.
+	//
+	// Thought about this later, but it would be nice to view two different
+	// websites side by side in one tab.
 	desktop_viewport &viewport.Viewport = unsafe { nil }
 	tablet_viewport  ?&viewport.Viewport
 	phone_viewport   ?&viewport.Viewport
@@ -44,12 +48,13 @@ pub fn Window.new(params &NewWindowOptions) &Window {
 		// maximized: params.maximized
 		user_data:    win
 		frame_fn:     win.frame
+		event_fn:     win.event
 		bg_color:     gx.white
 		window_title: title
 	)
 	win.address_bar = components.TextField{
 		width: win.width()
-		value: 'https://example.com/'.bytes()
+		value: 'https://example.com/'
 	}
 	win.desktop_viewport = &viewport.Viewport{
 		context:  mut win.context
@@ -76,6 +81,31 @@ pub fn (mut win Window) frame(_ voidptr) {
 	win.address_bar.draw(mut win.context)
 	win.desktop_viewport.draw()
 	win.context.end()
+}
+
+pub fn (mut win Window) event(evt &gg.Event, _ voidptr) {
+	if evt.typ == .key_down {
+		if evt.key_code == .enter {
+			mut p := parser.Parser.from_url(win.address_bar.value) or {
+				win.address_bar.value = err.msg()
+				return
+			}
+			mut doc := p.parse()
+			println(doc.to_html())
+			win.desktop_viewport = &viewport.Viewport{
+				context:  mut win.context
+				global_x: 0
+				global_y: win.address_bar.height
+				width:    win.width()
+				height:   win.height()
+				document: doc
+			}
+
+			return
+		}
+
+		win.address_bar.write_key_code(evt.key_code, win.context.key_modifiers)
+	}
 }
 
 @[inline]
