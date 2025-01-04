@@ -8,10 +8,10 @@ pub mut:
 	protocol string
 	username string
 	password string
-	host string
+	host     string
 	hostname string
-	port string
+	port     string
 	pathname string
-	search string
-	hash string
+	search   string
+	hash     string
 }

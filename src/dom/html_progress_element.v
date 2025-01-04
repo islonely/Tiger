@@ -10,10 +10,10 @@ pub mut:
 	labels   []&Node
 }
 
-[inline]
+@[inline]
 pub fn HTMLProgressElement.new(owner_document &Document) &HTMLProgressElement {
 	return &HTMLProgressElement{
 		owner_document: owner_document
-		tag_name: 'progress'
+		tag_name:       'progress'
 	}
 }

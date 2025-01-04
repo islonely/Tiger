@@ -13,10 +13,10 @@ pub mut:
 	height u64
 }
 
-[inline]
+@[inline]
 pub fn HTMLSourceElement.new(owner_document &Document) &HTMLSourceElement {
 	return &HTMLSourceElement{
 		owner_document: owner_document
-		tag_name: 'source'
+		tag_name:       'source'
 	}
 }

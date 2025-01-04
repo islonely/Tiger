@@ -12,10 +12,10 @@ pub mut:
 	v_align string
 }
 
-[inline]
+@[inline]
 pub fn HTMLTableSectionElement.new(owner_document &Document, name string) &HTMLTableSectionElement {
 	return &HTMLTableSectionElement{
 		owner_document: owner_document
-		tag_name: name
+		tag_name:       name
 	}
 }

@@ -8,10 +8,10 @@ pub mut:
 	label    string
 }
 
-[inline]
+@[inline]
 pub fn HTMLOptGroupElement.new(owner_document &Document) &HTMLOptGroupElement {
 	return &HTMLOptGroupElement{
 		owner_document: owner_document
-		tag_name: 'optgroup'
+		tag_name:       'optgroup'
 	}
 }

@@ -7,11 +7,11 @@ pub mut:
 	text string
 }
 
-[inline]
+@[inline]
 pub fn HTMLTitleElement.new(owner_document &Document, title string) &HTMLTitleElement {
 	return &HTMLTitleElement{
 		owner_document: owner_document
-		tag_name: 'title'
-		text: title
+		tag_name:       'title'
+		text:           title
 	}
 }

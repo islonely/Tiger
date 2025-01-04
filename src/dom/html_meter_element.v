@@ -13,10 +13,10 @@ pub mut:
 	labels  []&Node
 }
 
-[inline]
+@[inline]
 pub fn HTMLMeterElement.new(owner_document &Document) &HTMLMeterElement {
 	return &HTMLMeterElement{
 		owner_document: owner_document
-		tag_name: 'meter'
+		tag_name:       'meter'
 	}
 }

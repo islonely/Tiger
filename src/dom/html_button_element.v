@@ -20,10 +20,10 @@ pub mut:
 	labels             []&Node
 }
 
-[inline]
+@[inline]
 pub fn HTMLButtonElement.new(owner_document &Document) &HTMLButtonElement {
 	return &HTMLButtonElement{
 		owner_document: owner_document
-		tag_name: 'button'
+		tag_name:       'button'
 	}
 }

@@ -11,10 +11,10 @@ pub mut:
 	@type string
 }
 
-[inline]
+@[inline]
 pub fn HTMLStyleElement.new(owner_document &Document) &HTMLStyleElement {
 	return &HTMLStyleElement{
 		owner_document: owner_document
-		tag_name: 'style'
+		tag_name:       'style'
 	}
 }

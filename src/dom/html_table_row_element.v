@@ -15,10 +15,10 @@ pub mut:
 	bg_color string
 }
 
-[inline]
+@[inline]
 pub fn HTMLTableRowElement.new(owner_document &Document) &HTMLTableRowElement {
 	return &HTMLTableRowElement{
 		owner_document: owner_document
-		tag_name: 'tr'
+		tag_name:       'tr'
 	}
 }

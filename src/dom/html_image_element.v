@@ -31,10 +31,10 @@ pub mut:
 	border    string
 }
 
-[inline]
+@[inline]
 pub fn HTMLImageElement.new(owner_document &Document) &HTMLImageElement {
 	return &HTMLImageElement{
 		owner_document: owner_document
-		tag_name: 'img'
+		tag_name:       'img'
 	}
 }

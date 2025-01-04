@@ -8,10 +8,10 @@ pub mut:
 	clear string
 }
 
-[inline]
+@[inline]
 pub fn HTMLBRElement.new(owner_document &Document) &HTMLBRElement {
 	return &HTMLBRElement{
 		owner_document: owner_document
-		tag_name: 'br'
+		tag_name:       'br'
 	}
 }

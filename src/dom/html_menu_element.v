@@ -8,10 +8,10 @@ pub mut:
 	compact bool
 }
 
-[inline]
+@[inline]
 pub fn HTMLMenuElement.new(owner_document &Document) &HTMLMenuElement {
 	return &HTMLMenuElement{
 		owner_document: owner_document
-		tag_name: 'menu'
+		tag_name:       'menu'
 	}
 }

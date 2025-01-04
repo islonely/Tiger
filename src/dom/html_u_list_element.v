@@ -9,10 +9,10 @@ pub mut:
 	@type   string
 }
 
-[inline]
+@[inline]
 pub fn HTMLUListElement.new(owner_document &Document) &HTMLUListElement {
 	return &HTMLUListElement{
 		owner_document: owner_document
-		tag_name: 'ul'
+		tag_name:       'ul'
 	}
 }

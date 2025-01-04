@@ -8,10 +8,10 @@ pub mut:
 	// areas HTMLCollection
 }
 
-[inline]
+@[inline]
 pub fn HTMLMapElement.new(owner_document &Document) &HTMLMapElement {
 	return &HTMLMapElement{
 		owner_document: owner_document
-		tag_name: 'map'
+		tag_name:       'map'
 	}
 }

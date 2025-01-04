@@ -9,10 +9,10 @@ pub mut:
 	control  ?&HTMLElement
 }
 
-[inline]
+@[inline]
 pub fn HTMLLabelElement.new(owner_document &Document) &HTMLLabelElement {
 	return &HTMLLabelElement{
 		owner_document: owner_document
-		tag_name: 'label'
+		tag_name:       'label'
 	}
 }

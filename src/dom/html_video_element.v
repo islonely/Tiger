@@ -12,10 +12,10 @@ pub mut:
 	plays_inline bool
 }
 
-[inline]
+@[inline]
 pub fn HTMLVideoElement.new(owner_document &Document) &HTMLVideoElement {
 	return &HTMLVideoElement{
 		owner_document: owner_document
-		tag_name: 'video'
+		tag_name:       'video'
 	}
 }

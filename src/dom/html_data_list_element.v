@@ -7,10 +7,10 @@ pub mut:
 	options map[string]&Element
 }
 
-[inline]
+@[inline]
 pub fn HTMLDataListElement.new(owner_document &Document) &HTMLDataListElement {
 	return &HTMLDataListElement{
 		owner_document: owner_document
-		tag_name: 'datalist'
+		tag_name:       'datalist'
 	}
 }

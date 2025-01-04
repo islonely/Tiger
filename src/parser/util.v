@@ -1,22 +1,20 @@
 module parser
 
-import strings { Builder }
+import strings
 import term
 
 // Used in `fn put` to write specific colors to screen.
-const (
-	notice_prefix  = term.bright_yellow('notice')
-	warning_prefix = $if windows {
-		term.bright_magenta('warning')
-	} $else {
-		term.rgb(285, 87, 51, 'warning')
-	}
-	fatal_prefix = $if windows {
-		term.bright_red('fatal')
-	} $else {
-		term.rgb(212, 32, 32, 'error')
-	}
-)
+const notice_prefix = term.bright_yellow('notice')
+const warning_prefix = $if windows {
+	term.bright_magenta('warning')
+} $else {
+	term.rgb(285, 87, 51, 'warning')
+}
+const fatal_prefix = $if windows {
+	term.bright_red('fatal')
+} $else {
+	term.rgb(212, 32, 32, 'error')
+}
 
 // PrintType is different types of messages that can be
 // printed to the screen for auto colorization and prefixing.
@@ -38,10 +36,10 @@ enum PrintType {
 
 // PrintParams are the required parameters to print custom
 // colorized messages to the terminal.
-[params]
+@[params]
 struct PrintParams {
 	// text to be printed on the screen
-	text string [required]
+	text string @[required]
 	// println vs print
 	newline bool = true
 	// print the text or return it as a string instead
@@ -57,9 +55,9 @@ struct PrintParams {
 fn put(params PrintParams) string {
 	subject := match params.typ {
 		.@none { params.text }
-		.notice { parser.notice_prefix + ': ${params.text}' }
-		.warning { parser.warning_prefix + ': ${params.text}' }
-		.fatal { parser.fatal_prefix + ': ${params.text}' }
+		.notice { notice_prefix + ': ${params.text}' }
+		.warning { warning_prefix + ': ${params.text}' }
+		.fatal { fatal_prefix + ': ${params.text}' }
 	}
 	if !params.print {
 		return subject
@@ -83,7 +81,7 @@ fn rune_to_lower(r rune) rune {
 
 // is_surrogate returns whether or not a rune is a surrogate
 // character.
-[inline]
+@[inline]
 fn is_surrogate(r rune) bool {
 	return if r >= 0xd800 && r <= 0xdfff {
 		true
@@ -93,7 +91,7 @@ fn is_surrogate(r rune) bool {
 }
 
 // is_noncharacter returns whether or not a rune is a noncharacter.
-[inline]
+@[inline]
 fn is_noncharacter(r rune) bool {
 	// vfmt off
 	return if (r >= 0xfdd0 && r <= 0xfdef) || r in [
@@ -113,7 +111,7 @@ fn is_noncharacter(r rune) bool {
 
 // is_c0_control returns whether or not a rune is a C0 control
 // character.
-[inline]
+@[inline]
 fn is_c0_control(r rune) bool {
 	return if r >= 0x0000 && r <= 0x001f {
 		true
@@ -123,7 +121,7 @@ fn is_c0_control(r rune) bool {
 }
 
 // is_control returns whether or not a rune is a control character.
-[inline]
+@[inline]
 fn is_control(r rune) bool {
 	return if is_c0_control(r) || (r >= 0x007f && r <= 0x009f) {
 		true

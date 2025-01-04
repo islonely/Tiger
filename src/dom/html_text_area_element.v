@@ -30,10 +30,10 @@ pub mut:
 	selection_direction string
 }
 
-[inline]
+@[inline]
 pub fn HTMLTextAreaElement.new(owner_document &Document) &HTMLTextAreaElement {
 	return &HTMLTextAreaElement{
 		owner_document: owner_document
-		tag_name: 'textarea'
+		tag_name:       'textarea'
 	}
 }

@@ -8,10 +8,10 @@ pub mut:
 	align string
 }
 
-[inline]
+@[inline]
 pub fn HTMLParagraphElement.new(owner_document &Document) &HTMLParagraphElement {
 	return &HTMLParagraphElement{
 		owner_document: owner_document
-		tag_name: 'p'
+		tag_name:       'p'
 	}
 }

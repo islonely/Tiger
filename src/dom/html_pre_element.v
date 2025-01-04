@@ -8,10 +8,10 @@ pub mut:
 	width i64
 }
 
-[inline]
+@[inline]
 pub fn HTMLPreElement.new(owner_document &Document) &HTMLPreElement {
 	return &HTMLPreElement{
 		owner_document: owner_document
-		tag_name: 'pre'
+		tag_name:       'pre'
 	}
 }

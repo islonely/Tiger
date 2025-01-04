@@ -7,10 +7,10 @@ pub mut:
 	compact bool
 }
 
-[inline]
+@[inline]
 pub fn HTMLDListElement.new(owner_document &Document) &HTMLDListElement {
 	return &HTMLDListElement{
 		owner_document: owner_document
-		tag_name: 'dl'
+		tag_name:       'dl'
 	}
 }

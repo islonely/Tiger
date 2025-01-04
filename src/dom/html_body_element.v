@@ -13,10 +13,10 @@ pub mut:
 	background string
 }
 
-[inline]
+@[inline]
 pub fn HTMLBodyElement.new(owner_document &Document) &HTMLBodyElement {
 	return &HTMLBodyElement{
 		owner_document: owner_document
-		tag_name: 'body'
+		tag_name:       'body'
 	}
 }

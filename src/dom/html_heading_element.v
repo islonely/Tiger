@@ -9,10 +9,10 @@ pub mut:
 }
 
 // size should only be 1 through 6
-[inline]
+@[inline]
 pub fn HTMLHeadingElement.new(owner_document &Document, size int) &HTMLHeadingElement {
 	return &HTMLHeadingElement{
 		owner_document: owner_document
-		tag_name: 'h${size}'
+		tag_name:       'h${size}'
 	}
 }

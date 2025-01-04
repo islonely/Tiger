@@ -13,10 +13,10 @@ pub mut:
 	width   string
 }
 
-[inline]
+@[inline]
 pub fn HTMLTableColElement.new(owner_document &Document) &HTMLTableColElement {
 	return &HTMLTableColElement{
 		owner_document: owner_document
-		tag_name: 'col'
+		tag_name:       'col'
 	}
 }

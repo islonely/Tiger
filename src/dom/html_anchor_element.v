@@ -25,6 +25,6 @@ pub mut:
 pub fn HTMLAnchorElement.new(owner_document &Document) &HTMLAnchorElement {
 	return &HTMLAnchorElement{
 		owner_document: owner_document
-		tag_name: 'a'
+		tag_name:       'a'
 	}
 }

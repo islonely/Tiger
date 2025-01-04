@@ -8,10 +8,10 @@ pub mut:
 	rows string
 }
 
-[inline]
+@[inline]
 pub fn HTMLFrameSetElement.new(owner_document &Document) &HTMLFrameSetElement {
 	return &HTMLFrameSetElement{
 		owner_document: owner_document
-		tag_name: 'frameset'
+		tag_name:       'frameset'
 	}
 }

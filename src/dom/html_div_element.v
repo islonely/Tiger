@@ -8,10 +8,10 @@ pub mut:
 	align string
 }
 
-[inline]
+@[inline]
 pub fn HTMLDivElement.new(owner_document &Document) &HTMLDivElement {
 	return &HTMLDivElement{
 		owner_document: owner_document
-		tag_name: 'div'
+		tag_name:       'div'
 	}
 }

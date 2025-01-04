@@ -8,10 +8,10 @@ pub mut:
 	align string
 }
 
-[inline]
+@[inline]
 pub fn HTMLTableCaptionElement.new(owner_document &Document) &HTMLTableCaptionElement {
 	return &HTMLTableCaptionElement{
 		owner_document: owner_document
-		tag_name: 'caption'
+		tag_name:       'caption'
 	}
 }

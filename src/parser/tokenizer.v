@@ -3,19 +3,15 @@ module parser
 import datatypes { Stack }
 import strings { new_builder }
 
-const (
-	null              = rune(0)
-	replacement_token = CharacterToken(0xfffd)
-)
+const null = rune(0)
+const replacement_token = CharacterToken(0xfffd)
 
-const (
-	whitespace         = [rune(0x0009), 0x000a, 0x000c, 0x000d, 0x0020]
-	ascii_alpha        = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.runes()
-	ascii_alphanumeric = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.runes()
-	decimal_digits     = '0123456789'.runes()
-	hex_digits_lower   = '0123456789abcdef'.runes()
-	hex_digits_upper   = '01234566789ABCDEF'.runes()
-)
+const whitespace = [rune(0x0009), 0x000a, 0x000c, 0x000d, 0x0020]
+const ascii_alpha = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.runes()
+const ascii_alphanumeric = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.runes()
+const decimal_digits = '0123456789'.runes()
+const hex_digits_lower = '0123456789abcdef'.runes()
+const hex_digits_upper = '01234566789ABCDEF'.runes()
 
 struct Tokenizer {
 	source []rune
@@ -122,7 +118,7 @@ enum TokenizerState {
 
 // reconsume moves the cursor position back one space, so that the
 // consume function will not change t.char.
-[inline]
+@[inline]
 fn (mut t Tokenizer) reconsume() {
 	t.pos--
 }
@@ -486,7 +482,7 @@ fn (mut t Tokenizer) data_state() []Token {
 		return t.tag_open_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		// parse error: unexpected null character
 		println('Unexpected Null Character')
 	}
@@ -512,9 +508,9 @@ fn (mut t Tokenizer) rcdata_state() []Token {
 		return t.rcdata_less_than_sign_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
-		return [parser.replacement_token]
+		return [replacement_token]
 	}
 
 	return [CharacterToken(t.char)]
@@ -532,9 +528,9 @@ fn (mut t Tokenizer) rawtext_state() []Token {
 		return t.rawtext_less_than_sign_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
-		return [parser.replacement_token]
+		return [replacement_token]
 	}
 
 	return [CharacterToken(t.char)]
@@ -552,9 +548,9 @@ fn (mut t Tokenizer) script_data_state() []Token {
 		return t.script_data_less_than_sign_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
-		return [parser.replacement_token]
+		return [replacement_token]
 	}
 
 	return [CharacterToken(t.char)]
@@ -567,9 +563,9 @@ fn (mut t Tokenizer) plaintext_state() []Token {
 		return [EOFToken{}]
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
-		return [parser.replacement_token]
+		return [replacement_token]
 	}
 
 	return [CharacterToken(t.char)]
@@ -598,7 +594,7 @@ fn (mut t Tokenizer) tag_open_state() []Token {
 		return t.end_tag_open_state()
 	}
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		t.token = TagToken{}
 		t.reconsume()
 		t.state = .tag_name
@@ -633,7 +629,7 @@ fn (mut t Tokenizer) end_tag_open_state() []Token {
 		]
 	}
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		t.token = TagToken{
 			is_start: false
 		}
@@ -665,7 +661,7 @@ fn (mut t Tokenizer) tag_name_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		t.state = .before_attribute_name
 		return t.before_attribute_name_state()
 	}
@@ -683,7 +679,7 @@ fn (mut t Tokenizer) tag_name_state() []Token {
 		return [t.token]
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as TagToken)
 		tok.name.write_rune(0xfffd)
@@ -724,7 +720,7 @@ fn (mut t Tokenizer) rcdata_end_tag_open_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		t.token = TagToken{
 			is_start: false
 		}
@@ -746,7 +742,7 @@ fn (mut t Tokenizer) rcdata_end_tag_name_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		if t.is_token_appropriate_end_tag() {
 			t.state = .before_attribute_name
 			return t.before_attribute_name_state()
@@ -773,7 +769,7 @@ fn (mut t Tokenizer) rcdata_end_tag_name_state() []Token {
 		return anything_else()
 	}
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		mut tok := &(t.token as TagToken)
 		tok.name.write_rune(rune_to_lower(t.char))
 		t.buffer.write_rune(t.char)
@@ -812,7 +808,7 @@ fn (mut t Tokenizer) rawtext_end_tag_open_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		t.token = TagToken{
 			is_start: false
 		}
@@ -834,7 +830,7 @@ fn (mut t Tokenizer) rawtext_end_tag_name_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		if t.is_token_appropriate_end_tag() {
 			t.state = .before_attribute_name
 			return t.before_attribute_name_state()
@@ -861,7 +857,7 @@ fn (mut t Tokenizer) rawtext_end_tag_name_state() []Token {
 		return anything_else()
 	}
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		mut tok := &(t.token as TagToken)
 		tok.name.write_rune(rune_to_lower(t.char))
 		t.buffer.write_rune(t.char)
@@ -904,7 +900,7 @@ fn (mut t Tokenizer) script_data_end_tag_open_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		t.token = TagToken{
 			is_start: false
 		}
@@ -926,7 +922,7 @@ fn (mut t Tokenizer) script_data_end_tag_name_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		if t.is_token_appropriate_end_tag() {
 			t.state = .before_attribute_name
 			return t.before_attribute_name_state()
@@ -953,7 +949,7 @@ fn (mut t Tokenizer) script_data_end_tag_name_state() []Token {
 		return anything_else()
 	}
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		mut tok := &(t.token as TagToken)
 		tok.name.write_rune(rune_to_lower(t.char))
 		t.buffer.write_rune(t.char)
@@ -1019,9 +1015,9 @@ fn (mut t Tokenizer) script_data_escaped_state() []Token {
 		return t.script_data_escaped_less_than_sign_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
-		return [parser.replacement_token]
+		return [replacement_token]
 	}
 
 	return [CharacterToken(t.char)]
@@ -1048,9 +1044,9 @@ fn (mut t Tokenizer) script_data_escaped_dash_state() []Token {
 		return t.script_data_escaped_less_than_sign_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
-		return [parser.replacement_token]
+		return [replacement_token]
 	}
 
 	t.state = .script_data_escaped
@@ -1082,9 +1078,9 @@ fn (mut t Tokenizer) script_data_escaped_dash_dash_state() []Token {
 		return [CharacterToken(`>`)]
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
-		return [parser.replacement_token]
+		return [replacement_token]
 	}
 
 	t.state = .script_data_escaped
@@ -1107,7 +1103,7 @@ fn (mut t Tokenizer) script_data_escaped_less_than_sign_state() []Token {
 		return t.script_data_escaped_end_tag_open_state()
 	}
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		t.buffer = new_builder(50)
 		t.reconsume()
 		t.state = .script_data_double_escape_start
@@ -1127,7 +1123,7 @@ fn (mut t Tokenizer) script_data_escaped_end_tag_open_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		t.token = TagToken{}
 		t.reconsume()
 		t.state = .script_data_escaped_end_tag_name
@@ -1147,7 +1143,7 @@ fn (mut t Tokenizer) script_data_escaped_end_tag_name_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		if t.is_token_appropriate_end_tag() {
 			t.state = .before_attribute_name
 			return t.before_attribute_name_state()
@@ -1174,7 +1170,7 @@ fn (mut t Tokenizer) script_data_escaped_end_tag_name_state() []Token {
 		return anything_else()
 	}
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		mut tok := &(t.token as TagToken)
 		tok.name.write_rune(rune_to_lower(t.char))
 		t.buffer.write_rune(t.char)
@@ -1194,7 +1190,7 @@ fn (mut t Tokenizer) script_data_double_escape_start_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.whitespace || t.char in [`/`, `>`] {
+	if t.char in whitespace || t.char in [`/`, `>`] {
 		if t.buffer.bytestr() == 'script' {
 			t.state = .script_data_double_escaped
 			return t.script_data_double_escaped_state()
@@ -1204,7 +1200,7 @@ fn (mut t Tokenizer) script_data_double_escape_start_state() []Token {
 		}
 	}
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		t.buffer.write_rune(t.char)
 		return t.script_data_double_escape_start_state()
 	}
@@ -1233,9 +1229,9 @@ fn (mut t Tokenizer) script_data_double_escaped_state() []Token {
 		return [CharacterToken(`<`)]
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
-		return [parser.replacement_token]
+		return [replacement_token]
 	}
 
 	return [CharacterToken(t.char)]
@@ -1262,10 +1258,10 @@ fn (mut t Tokenizer) script_data_double_escaped_dash_state() []Token {
 		return [CharacterToken(`<`)]
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		t.state = .script_data_double_escaped
-		return [parser.replacement_token]
+		return [replacement_token]
 	}
 
 	t.state = .script_data_double_escaped
@@ -1292,10 +1288,10 @@ fn (mut t Tokenizer) script_data_double_escaped_dash_dash_state() []Token {
 		return [CharacterToken(`<`)]
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		t.state = .script_data_double_escaped
-		return [parser.replacement_token]
+		return [replacement_token]
 	}
 
 	t.state = .script_data_double_escaped
@@ -1331,7 +1327,7 @@ fn (mut t Tokenizer) script_data_double_escape_end_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.whitespace || t.char in [`/`, `>`] {
+	if t.char in whitespace || t.char in [`/`, `>`] {
 		if t.buffer.bytestr() == 'script' {
 			t.state = .script_data_escaped
 			return t.script_data_escaped_state()
@@ -1341,7 +1337,7 @@ fn (mut t Tokenizer) script_data_double_escape_end_state() []Token {
 		}
 	}
 
-	if t.char in parser.ascii_alpha {
+	if t.char in ascii_alpha {
 		t.buffer.write_rune(rune_to_lower(t.char))
 		return [CharacterToken(t.char)]
 	}
@@ -1357,7 +1353,7 @@ fn (mut t Tokenizer) before_attribute_name_state() []Token {
 		return t.after_attribute_name_state()
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		return t.before_attribute_name_state()
 	}
 
@@ -1401,7 +1397,7 @@ fn (mut t Tokenizer) attribute_name_state() []Token {
 
 	t.consume() or { return ws() }
 
-	if t.char in parser.whitespace || t.char in [`/`, `>`] {
+	if t.char in whitespace || t.char in [`/`, `>`] {
 		return ws()
 	}
 
@@ -1417,7 +1413,7 @@ fn (mut t Tokenizer) attribute_name_state() []Token {
 	// 	return t.emit_token()
 	// }
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as TagToken)
 		mut attr := &(tok.attributes[tok.attributes.len - 1])
@@ -1441,7 +1437,7 @@ fn (mut t Tokenizer) after_attribute_name_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		return t.after_attribute_name_state()
 	}
 
@@ -1477,7 +1473,7 @@ fn (mut t Tokenizer) before_attribute_value_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		return t.before_attribute_value_state()
 	}
 
@@ -1520,7 +1516,7 @@ fn (mut t Tokenizer) attribute_value_double_quoted_state() []Token {
 		return t.character_reference_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as TagToken)
 		mut attr := &(tok.attributes[tok.attributes.len - 1])
@@ -1553,7 +1549,7 @@ fn (mut t Tokenizer) attribute_value_single_quoted_state() []Token {
 		return t.character_reference_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as TagToken)
 		mut attr := &(tok.attributes[tok.attributes.len - 1])
@@ -1582,7 +1578,7 @@ fn (mut t Tokenizer) attribute_value_unquoted_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		t.state = .before_attribute_name
 		return t.before_attribute_name_state()
 	}
@@ -1598,7 +1594,7 @@ fn (mut t Tokenizer) attribute_value_unquoted_state() []Token {
 		return [t.token]
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as TagToken)
 		mut attr := &(tok.attributes[tok.attributes.len - 1])
@@ -1622,7 +1618,7 @@ fn (mut t Tokenizer) after_attribute_value_quoted_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		t.state = .before_attribute_name
 		return t.before_attribute_name_state()
 	}
@@ -1677,7 +1673,7 @@ fn (mut t Tokenizer) bogus_comment_state() []Token {
 		return [t.token]
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as CommentToken)
 		tok.data.write_rune(0xfffd)
@@ -1791,7 +1787,7 @@ fn (mut t Tokenizer) comment_state() []Token {
 		return t.comment_end_dash_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as CommentToken)
 		tok.data.write_rune(0xfffd)
@@ -1972,7 +1968,7 @@ fn (mut t Tokenizer) doctype_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		t.state = .before_doctype_name
 		return t.before_doctype_name_state()
 	}
@@ -2001,11 +1997,11 @@ fn (mut t Tokenizer) before_doctype_name_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		return t.before_doctype_name_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		t.token = DoctypeToken{}
 		mut tok := &(t.token as DoctypeToken)
@@ -2043,7 +2039,7 @@ fn (mut t Tokenizer) doctype_name_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		t.state = .after_doctype_name
 		return t.after_doctype_name_state()
 	}
@@ -2053,7 +2049,7 @@ fn (mut t Tokenizer) doctype_name_state() []Token {
 		return [t.token]
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as DoctypeToken)
 		tok.name.write_rune(0xfffd)
@@ -2076,7 +2072,7 @@ fn (mut t Tokenizer) after_doctype_name_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		return t.after_doctype_name_state()
 	}
 
@@ -2114,7 +2110,7 @@ fn (mut t Tokenizer) after_doctype_public_keyword_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		t.state = .before_doctype_public_identifier
 		return t.before_doctype_public_identifier_state()
 	}
@@ -2162,7 +2158,7 @@ fn (mut t Tokenizer) before_doctype_public_identifier_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		return t.before_doctype_public_identifier_state()
 	}
 
@@ -2212,7 +2208,7 @@ fn (mut t Tokenizer) doctype_public_identifier_double_quoted_state() []Token {
 		return t.after_doctype_public_identifier_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as DoctypeToken)
 		tok.public_identifier.write_rune(0xfffd)
@@ -2248,7 +2244,7 @@ fn (mut t Tokenizer) doctype_public_identifier_single_quoted_state() []Token {
 		return t.after_doctype_public_identifier_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as DoctypeToken)
 		tok.public_identifier.write_rune(0xfffd)
@@ -2279,7 +2275,7 @@ fn (mut t Tokenizer) after_doctype_public_identifier_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		t.state = .between_doctype_public_and_system_identifiers
 		return t.between_doctype_public_and_system_identifiers_state()
 	}
@@ -2324,7 +2320,7 @@ fn (mut t Tokenizer) between_doctype_public_and_system_identifiers_state() []Tok
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		return t.between_doctype_public_and_system_identifiers_state()
 	}
 
@@ -2366,7 +2362,7 @@ fn (mut t Tokenizer) after_doctype_system_keyword_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		t.state = .before_doctype_system_identifier
 		return t.before_doctype_system_identifier_state()
 	}
@@ -2414,7 +2410,7 @@ fn (mut t Tokenizer) before_doctype_system_identifier_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		return t.before_doctype_system_identifier_state()
 	}
 
@@ -2464,7 +2460,7 @@ fn (mut t Tokenizer) doctype_system_identifier_double_quoted_state() []Token {
 		return t.after_doctype_system_identifier_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as DoctypeToken)
 		tok.system_identifier.write_rune(0xfffd)
@@ -2500,7 +2496,7 @@ fn (mut t Tokenizer) doctype_system_identifier_single_quoted_state() []Token {
 		return t.after_doctype_system_identifier_state()
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		mut tok := &(t.token as DoctypeToken)
 		tok.system_identifier.write_rune(0xfffd)
@@ -2531,7 +2527,7 @@ fn (mut t Tokenizer) after_doctype_system_identifier_state() []Token {
 		}]
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		return t.after_doctype_system_identifier_state()
 	}
 
@@ -2558,7 +2554,7 @@ fn (mut t Tokenizer) bogus_doctype_state() []Token {
 		return [t.token]
 	}
 
-	if t.char == parser.null {
+	if t.char == null {
 		println(ParseError.unexpected_null_character)
 		return t.bogus_doctype_state()
 	}
@@ -2638,7 +2634,7 @@ fn (mut t Tokenizer) character_reference_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.ascii_alphanumeric {
+	if t.char in ascii_alphanumeric {
 		t.reconsume()
 		t.state = .named_character_reference
 		return t.named_character_reference_state()
@@ -2669,13 +2665,13 @@ fn (mut t Tokenizer) named_character_reference_state() []Token {
 	for {
 		t.consume() or { return anything_else() }
 
-		if t.char !in parser.ascii_alpha {
+		if t.char !in ascii_alpha {
 			break
 		}
 		char_ref.write_rune(t.char)
 	}
 
-	if t.char in parser.whitespace {
+	if t.char in whitespace {
 		println(ParseError.missing_semicolon_after_character_reference)
 		t.char_ref_code = named_char_ref[char_ref.bytestr()] or {
 			t.state = .ambiguous_ampersand
@@ -2715,7 +2711,7 @@ fn (mut t Tokenizer) ambiguous_ampersand_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.ascii_alphanumeric {
+	if t.char in ascii_alphanumeric {
 		if t.return_state in [
 			.attribute_value_double_quoted,
 			.attribute_value_single_quoted,
@@ -2773,7 +2769,7 @@ fn (mut t Tokenizer) hexadecimal_character_reference_start_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.hex_digits_lower || t.char in parser.hex_digits_upper {
+	if t.char in hex_digits_lower || t.char in hex_digits_upper {
 		t.reconsume()
 		t.state = .hexadecimal_character_reference
 		return t.hexadecimal_character_reference_state()
@@ -2795,7 +2791,7 @@ fn (mut t Tokenizer) decimal_character_reference_start_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.decimal_digits {
+	if t.char in decimal_digits {
 		t.reconsume()
 		t.state = .decimal_character_reference
 		return t.decimal_character_reference_state()
@@ -2815,19 +2811,19 @@ fn (mut t Tokenizer) hexadecimal_character_reference_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.decimal_digits {
+	if t.char in decimal_digits {
 		t.char_ref_code *= 16
 		t.char_ref_code += t.char - 0x0030
 		return t.hexadecimal_character_reference_state()
 	}
 
-	if t.char in parser.hex_digits_upper {
+	if t.char in hex_digits_upper {
 		t.char_ref_code *= 16
 		t.char_ref_code += t.char - 0x0037
 		return t.hexadecimal_character_reference_state()
 	}
 
-	if t.char in parser.hex_digits_lower {
+	if t.char in hex_digits_lower {
 		t.char_ref_code *= 16
 		t.char_ref_code += t.char - 0x0057
 		return t.hexadecimal_character_reference_state()
@@ -2852,7 +2848,7 @@ fn (mut t Tokenizer) decimal_character_reference_state() []Token {
 
 	t.consume() or { return anything_else() }
 
-	if t.char in parser.decimal_digits {
+	if t.char in decimal_digits {
 		t.char_ref_code *= 10
 		t.char_ref_code += t.char - 0x0030
 		return t.decimal_character_reference_state()
@@ -2880,7 +2876,7 @@ fn (mut t Tokenizer) numeric_character_reference_end_state() []Token {
 	} else if is_noncharacter(t.char_ref_code) {
 		println(ParseError.noncharacter_character_reference)
 	} else if t.char_ref_code == 0x0d
-		|| (is_control(t.char_ref_code) && t.char_ref_code !in parser.whitespace) {
+		|| (is_control(t.char_ref_code) && t.char_ref_code !in whitespace) {
 		println(ParseError.control_character_reference)
 		table := {
 			rune(0x80): rune(0x20ac)

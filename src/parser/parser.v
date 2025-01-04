@@ -4,89 +4,86 @@ import dom
 import net.http
 
 // DOCTYPE conditions; see `fn Parser.initial_insertion_mode()`
-const (
-	public_id_matches                          = [
-		'-//W3O//DTD W3 HTML Strict 3.0//EN//',
-		'-/W3C/DTD HTML 4.0 Transitional/EN',
-		'HTML',
-	]
-	public_id_starts_with                      = [
-		'+//Silmaril//dtd html Pro v0r11 19970101//',
-		'-//AS//DTD HTML 3.0 asWedit + extensions//',
-		'-//AdvaSoft Ltd//DTD HTML 3.0 asWedit + extensions//',
-		'-//IETF//DTD HTML 2.0 Level 1//',
-		'-//IETF//DTD HTML 2.0 Level 2//',
-		'-//IETF//DTD HTML 2.0 Strict Level 1//',
-		'-//IETF//DTD HTML 2.0 Strict Level 2//',
-		'-//IETF//DTD HTML 2.0 Strict//',
-		'-//IETF//DTD HTML 2.0//',
-		'-//IETF//DTD HTML 2.1E//',
-		'-//IETF//DTD HTML 3.0//',
-		'-//IETF//DTD HTML 3.2 Final//',
-		'-//IETF//DTD HTML 3.2//',
-		'-//IETF//DTD HTML 3//',
-		'-//IETF//DTD HTML Level 0//',
-		'-//IETF//DTD HTML Level 1//',
-		'-//IETF//DTD HTML Level 2//',
-		'-//IETF//DTD HTML Level 3//',
-		'-//IETF//DTD HTML Strict Level 0//',
-		'-//IETF//DTD HTML Strict Level 1//',
-		'-//IETF//DTD HTML Strict Level 2//',
-		'-//IETF//DTD HTML Strict Level 3//',
-		'-//IETF//DTD HTML Strict//',
-		'-//IETF//DTD HTML//',
-		'-//Metrius//DTD Metrius Presentational//',
-		'-//Microsoft//DTD Internet Explorer 2.0 HTML Strict//',
-		'-//Microsoft//DTD Internet Explorer 2.0 HTML//',
-		'-//Microsoft//DTD Internet Explorer 2.0 Tables//',
-		'-//Microsoft//DTD Internet Explorer 3.0 HTML Strict//',
-		'-//Microsoft//DTD Internet Explorer 3.0 HTML//',
-		'-//Microsoft//DTD Internet Explorer 3.0 Tables//',
-		'-//Netscape Comm. Corp.//DTD HTML//',
-		'-//Netscape Comm. Corp.//DTD Strict HTML//',
-		"-//O'Reilly and Associates//DTD HTML 2.0//",
-		"-//O'Reilly and Associates//DTD HTML Extended 1.0//",
-		"-//O'Reilly and Associates//DTD HTML Extended Relaxed 1.0//",
-		'-//SQ//DTD HTML 2.0 HoTMetaL + extensions//',
-		'-//SoftQuad Software//DTD HoTMetaL PRO 6.0::19990601::extensions to HTML 4.0//',
-		'-//SoftQuad//DTD HoTMetaL PRO 4.0::19971010::extensions to HTML 4.0//',
-		'-//Spyglass//DTD HTML 2.0 Extended//',
-		'-//Sun Microsystems Corp.//DTD HotJava HTML//',
-		'-//Sun Microsystems Corp.//DTD HotJava Strict HTML//',
-		'-//W3C//DTD HTML 3 1995-03-24//',
-		'-//W3C//DTD HTML 3.2 Draft//',
-		'-//W3C//DTD HTML 3.2 Final//',
-		'-//W3C//DTD HTML 3.2//',
-		'-//W3C//DTD HTML 3.2S Draft//',
-		'-//W3C//DTD HTML 4.0 Frameset//',
-		'-//W3C//DTD HTML 4.0 Transitional//',
-		'-//W3C//DTD HTML Experimental 19960712//',
-		'-//W3C//DTD HTML Experimental 970421//',
-		'-//W3C//DTD W3 HTML//',
-		'-//W3O//DTD W3 HTML 3.0//',
-		'-//WebTechs//DTD Mozilla HTML 2.0//',
-		'-//WebTechs//DTD Mozilla HTML//',
-	]
-	public_id_starts_with_if_system_id_missing = [
-		'-//W3C//DTD HTML 4.01 Frameset//',
-		'-//W3C//DTD HTML 4.01 Transitional//',
-	]
-)
+const public_id_matches = [
+	'-//W3O//DTD W3 HTML Strict 3.0//EN//',
+	'-/W3C/DTD HTML 4.0 Transitional/EN',
+	'HTML',
+]
+const public_id_starts_with = [
+	'+//Silmaril//dtd html Pro v0r11 19970101//',
+	'-//AS//DTD HTML 3.0 asWedit + extensions//',
+	'-//AdvaSoft Ltd//DTD HTML 3.0 asWedit + extensions//',
+	'-//IETF//DTD HTML 2.0 Level 1//',
+	'-//IETF//DTD HTML 2.0 Level 2//',
+	'-//IETF//DTD HTML 2.0 Strict Level 1//',
+	'-//IETF//DTD HTML 2.0 Strict Level 2//',
+	'-//IETF//DTD HTML 2.0 Strict//',
+	'-//IETF//DTD HTML 2.0//',
+	'-//IETF//DTD HTML 2.1E//',
+	'-//IETF//DTD HTML 3.0//',
+	'-//IETF//DTD HTML 3.2 Final//',
+	'-//IETF//DTD HTML 3.2//',
+	'-//IETF//DTD HTML 3//',
+	'-//IETF//DTD HTML Level 0//',
+	'-//IETF//DTD HTML Level 1//',
+	'-//IETF//DTD HTML Level 2//',
+	'-//IETF//DTD HTML Level 3//',
+	'-//IETF//DTD HTML Strict Level 0//',
+	'-//IETF//DTD HTML Strict Level 1//',
+	'-//IETF//DTD HTML Strict Level 2//',
+	'-//IETF//DTD HTML Strict Level 3//',
+	'-//IETF//DTD HTML Strict//',
+	'-//IETF//DTD HTML//',
+	'-//Metrius//DTD Metrius Presentational//',
+	'-//Microsoft//DTD Internet Explorer 2.0 HTML Strict//',
+	'-//Microsoft//DTD Internet Explorer 2.0 HTML//',
+	'-//Microsoft//DTD Internet Explorer 2.0 Tables//',
+	'-//Microsoft//DTD Internet Explorer 3.0 HTML Strict//',
+	'-//Microsoft//DTD Internet Explorer 3.0 HTML//',
+	'-//Microsoft//DTD Internet Explorer 3.0 Tables//',
+	'-//Netscape Comm. Corp.//DTD HTML//',
+	'-//Netscape Comm. Corp.//DTD Strict HTML//',
+	"-//O'Reilly and Associates//DTD HTML 2.0//",
+	"-//O'Reilly and Associates//DTD HTML Extended 1.0//",
+	"-//O'Reilly and Associates//DTD HTML Extended Relaxed 1.0//",
+	'-//SQ//DTD HTML 2.0 HoTMetaL + extensions//',
+	'-//SoftQuad Software//DTD HoTMetaL PRO 6.0::19990601::extensions to HTML 4.0//',
+	'-//SoftQuad//DTD HoTMetaL PRO 4.0::19971010::extensions to HTML 4.0//',
+	'-//Spyglass//DTD HTML 2.0 Extended//',
+	'-//Sun Microsystems Corp.//DTD HotJava HTML//',
+	'-//Sun Microsystems Corp.//DTD HotJava Strict HTML//',
+	'-//W3C//DTD HTML 3 1995-03-24//',
+	'-//W3C//DTD HTML 3.2 Draft//',
+	'-//W3C//DTD HTML 3.2 Final//',
+	'-//W3C//DTD HTML 3.2//',
+	'-//W3C//DTD HTML 3.2S Draft//',
+	'-//W3C//DTD HTML 4.0 Frameset//',
+	'-//W3C//DTD HTML 4.0 Transitional//',
+	'-//W3C//DTD HTML Experimental 19960712//',
+	'-//W3C//DTD HTML Experimental 970421//',
+	'-//W3C//DTD W3 HTML//',
+	'-//W3O//DTD W3 HTML 3.0//',
+	'-//WebTechs//DTD Mozilla HTML 2.0//',
+	'-//WebTechs//DTD Mozilla HTML//',
+]
+const public_id_starts_with_if_system_id_missing = [
+	'-//W3C//DTD HTML 4.01 Frameset//',
+	'-//W3C//DTD HTML 4.01 Transitional//',
+]
 
-const implied_end_tag_names = ['caption', 'colgroup', 'dd', 'li', 'optgroup', 'option',
-	'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead']
+const implied_end_tag_names = ['caption', 'colgroup', 'dd', 'li', 'optgroup', 'option', 'p', 'rb',
+	'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead']
 
 // todo: include mathml and svg tags
-const special_tag_names = ['address', 'applet', 'area', 'article', 'aside', 'base',
-	'basefont', 'bgsound', 'blockquote', 'body', 'br', 'button', 'caption', 'center',
-	'col', 'colgroup', 'dd', 'details', 'dir', 'div', 'dl', 'dt', 'embed', 'fieldset',
-	'figcaption', 'figure', 'footer', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3',
-	'h4', 'h5', 'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'iframe', 'img',
-	'input', 'isindex', 'li', 'link', 'listing', 'main', 'marquee', 'menu', 'meta',
-	'nav', 'noembed', 'noframes', 'noscript', 'object', 'ol', 'p', 'param', 'plaintext',
-	'pre', 'script', 'section', 'select', 'source', 'style', 'summary', 'table', 'tbody',
-	'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'title', 'tr', 'track',
-	'ul', 'wbr', 'xmp']
+const special_tag_names = ['address', 'applet', 'area', 'article', 'aside', 'base', 'basefont',
+	'bgsound', 'blockquote', 'body', 'br', 'button', 'caption', 'center', 'col', 'colgroup', 'dd',
+	'details', 'dir', 'div', 'dl', 'dt', 'embed', 'fieldset', 'figcaption', 'figure', 'footer',
+	'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hgroup',
+	'hr', 'html', 'iframe', 'img', 'input', 'isindex', 'li', 'link', 'listing', 'main', 'marquee',
+	'menu', 'meta', 'nav', 'noembed', 'noframes', 'noscript', 'object', 'ol', 'p', 'param',
+	'plaintext', 'pre', 'script', 'section', 'select', 'source', 'style', 'summary', 'table', 'tbody',
+	'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'title', 'tr', 'track', 'ul', 'wbr',
+	'xmp']
 
 // InsertionMode is the mode the parser will parse the token in.
 enum InsertionMode {
@@ -171,19 +168,19 @@ pub fn (open_elements OpenElements) has(looking_for voidptr) bool {
 
 // Parser parses the tokens emitted from the Tokenizer and creates
 // a document tree which is returned from `fn (mut Parser) parse`.
-[heap]
+@[heap]
 struct Parser {
 mut:
-	tokenizer                Tokenizer
-	insertion_mode           InsertionMode = .initial
-	original_insertion_mode  InsertionMode = .@none
-	scripting                ScriptingFlag = .disabled
-	frameset_ok              FramesetOKFlag = .ok
-	template_insertion_modes []InsertionMode
-	open_elems               OpenElements
-	active_formatting_elems  []&ActiveFormattingElements
+	tokenizer                      Tokenizer
+	insertion_mode                 InsertionMode  = .initial
+	original_insertion_mode        InsertionMode  = .@none
+	scripting                      ScriptingFlag  = .disabled
+	frameset_ok                    FramesetOKFlag = .ok
+	template_insertion_modes       []InsertionMode
+	open_elems                     OpenElements
+	active_formatting_elems        []&ActiveFormattingElements
 	active_speculative_html_parser ?&Parser
-	doc                      &dom.Document = dom.Document.new()
+	doc                            &dom.Document = dom.Document.new()
 	// adjusted_current_NodeBase    &dom.NodeBase
 	last_token      Token
 	current_token   Token
@@ -192,7 +189,7 @@ mut:
 }
 
 // Parser.from_string instantiates a Parser from the source string.
-[inline]
+@[inline]
 pub fn Parser.from_string(src string) Parser {
 	return Parser.from_runes(src.runes())
 }
@@ -225,7 +222,7 @@ pub fn Parser.from_url(url string) !Parser {
 pub fn (mut p Parser) parse() &dom.Document {
 	for p.tokenizer.state != .eof {
 		match p.insertion_mode {
-			.@none { return p.doc}
+			.@none { return p.doc }
 			.after_after_body {}
 			.after_after_frameset {}
 			.after_body { p.in_body_insertion_mode() }
@@ -263,7 +260,7 @@ pub fn (mut p Parser) parse() &dom.Document {
 
 // consume_token sets the current token to the next token
 // and gets the next token from the tokenizer.
-[inline]
+@[inline]
 fn (mut p Parser) consume_token() {
 	p.last_token, p.current_token, p.next_token = p.current_token, p.next_token, p.tokenizer.emit_token()
 }
@@ -281,7 +278,7 @@ fn (mut p Parser) before_html_insertion_mode() {
 	match mut p.current_token {
 		DoctypeToken {
 			put(
-				typ: .notice,
+				typ:  .notice
 				text: 'Ignoring DOCTYPE token.'
 			)
 		}
@@ -308,7 +305,7 @@ fn (mut p Parser) before_html_insertion_mode() {
 					anything_else()
 				} else {
 					put(
-						typ: .notice,
+						typ:  .notice
 						text: 'Ignoring end tag token: ${p.current_token.html}'
 					)
 				}
@@ -348,29 +345,30 @@ fn (mut p Parser) initial_insertion_mode() {
 			}
 
 			mut doctype := &dom.DocumentType{
-				node_type: .document_type
-				name: p.current_token.name.str()
-				public_id: p.current_token.public_identifier.str()
-				system_id: p.current_token.system_identifier.str()
+				node_type:      .document_type
+				name:           p.current_token.name.str()
+				public_id:      p.current_token.public_identifier.str()
+				system_id:      p.current_token.system_identifier.str()
 				owner_document: p.doc
 			}
 			p.doc.append_child(doctype)
 			p.doc.doctype = doctype
 
-			if /* p.doc is not iframe srcdoc document && */ !p.doc.parser_cannot_change_mode
+			// if p.doc is not iframe srcdoc documetn && !p.doc.parser_cannot_change_mode
+			if !p.doc.parser_cannot_change_mode
 				&& (p.current_token.force_quirks || doctype.name != 'html') {
 				p.doc.mode = .quirks
 			}
-			if doctype.public_id in parser.public_id_matches {
+			if doctype.public_id in public_id_matches {
 				p.doc.mode = .quirks
 			}
-			for val in parser.public_id_starts_with {
+			for val in public_id_starts_with {
 				if doctype.public_id.starts_with(val) {
 					p.doc.mode = .quirks
 					break
 				}
 			}
-			for val in parser.public_id_starts_with_if_system_id_missing {
+			for val in public_id_starts_with_if_system_id_missing {
 				if p.current_token.system_identifier == doctype_missing
 					&& doctype.public_id.starts_with(val) {
 					p.doc.mode = .quirks
@@ -378,7 +376,8 @@ fn (mut p Parser) initial_insertion_mode() {
 				}
 			}
 			if p.doc.mode != .quirks {
-				if /* p.doc is not iframe srcdoc document && */ !p.doc.parser_cannot_change_mode
+				// p.doc is not iframe srcdoc document && !p.doc.parser_cannot_change_mode
+				if !p.doc.parser_cannot_change_mode
 					&& (doctype.public_id.starts_with('-//W3C//DTD XHTML 1.0 Frameset//')
 					|| doctype.public_id.starts_with('-//W3C//DTD XHTML 1.0 Transitional//')
 					|| (p.current_token.system_identifier == doctype_missing
@@ -391,7 +390,8 @@ fn (mut p Parser) initial_insertion_mode() {
 			p.insertion_mode = .before_html
 		}
 		else {
-			if /* p.doc is not iframe srcdoc document && */ !p.doc.parser_cannot_change_mode {
+			// p.doc is not iframe srcdoc document && !p.doc.parser_cannot_change_mode
+			if !p.doc.parser_cannot_change_mode {
 				p.doc.mode = .quirks
 				// parse error if no iframe srcdoc document
 			}
@@ -413,7 +413,7 @@ fn (mut p Parser) before_head_insertion_mode() {
 	}
 	match mut p.current_token {
 		CharacterToken {
-			if p.current_token in parser.whitespace {
+			if p.current_token in whitespace {
 				return
 			}
 
@@ -424,7 +424,7 @@ fn (mut p Parser) before_head_insertion_mode() {
 		}
 		DoctypeToken {
 			put(
-				typ: .notice
+				typ:  .notice
 				text: 'Invalid DOCTYPE token. Ignoring token.'
 			)
 		}
@@ -444,14 +444,14 @@ fn (mut p Parser) before_head_insertion_mode() {
 				anything_else()
 				return
 			}
-			
+
 			if p.current_token.name() in ['head', 'body', 'html', 'br'] {
 				anything_else()
 				return
 			}
 
 			put(
-				typ: .notice
+				typ:  .notice
 				text: 'Invalid end tag token. Ignoring token.'
 			)
 		}
@@ -473,7 +473,7 @@ fn (mut p Parser) in_head_insertion_mode() {
 
 	match mut p.current_token {
 		CharacterToken {
-			if p.current_token in parser.whitespace {
+			if p.current_token in whitespace {
 				p.insert_text(p.current_token.str())
 			}
 		}
@@ -482,7 +482,7 @@ fn (mut p Parser) in_head_insertion_mode() {
 		}
 		DoctypeToken {
 			put(
-				typ: .notice
+				typ:  .notice
 				text: 'Invalid DOCTYPE token. Ignoring token.'
 			)
 		}
@@ -509,7 +509,8 @@ fn (mut p Parser) in_head_insertion_mode() {
 					p.tokenizer.state = .rcdata
 					p.original_insertion_mode = p.insertion_mode
 					p.insertion_mode = .text
-				} else if (tag_name == 'noscript' && p.doc.scripting) || tag_name in ['noframes', 'style'] {
+				} else if (tag_name == 'noscript' && p.doc.scripting)
+					|| tag_name in ['noframes', 'style'] {
 					p.insert_html_element()
 					p.tokenizer.state = .rawtext
 					p.original_insertion_mode = p.insertion_mode
@@ -544,7 +545,7 @@ fn (mut p Parser) in_head_insertion_mode() {
 					p.template_insertion_modes << .in_template
 				} else if tag_name == 'head' {
 					put(
-						typ: .warning
+						typ:  .warning
 						text: 'Unexpected head tag <head>: ignoring token.'
 					)
 				} else {
@@ -561,7 +562,7 @@ fn (mut p Parser) in_head_insertion_mode() {
 				} else if tag_name == 'template' {
 					if !p.open_elems.has_by_tag_name('template') {
 						put(
-							typ: .warning
+							typ:  .warning
 							text: 'Unexpected </template> tag token; ingoring token.'
 						)
 						return
@@ -570,7 +571,7 @@ fn (mut p Parser) in_head_insertion_mode() {
 					p.generate_all_implied_end_tags_thorougly()
 					if p.open_elems.len == 0 {
 						put(
-							typ: .warning
+							typ:  .warning
 							text: 'Unexpected </template> tag token; ignoring token.'
 						)
 						return
@@ -578,15 +579,15 @@ fn (mut p Parser) in_head_insertion_mode() {
 					mut template_element := p.open_elems.last()
 					if &dom.HTMLElement(template_element).tag_name != 'template' {
 						put(
-							typ: .warning
+							typ:  .warning
 							text: 'Current node is not a <template> tag.'
 						)
 					}
 					for &dom.HTMLElement(template_element).tag_name != 'template' {
 						if p.open_elems.len == 0 {
 							put(
-								typ: .warning
-								text: 'There were no <template> tags in the parser\'s stack of open elements.'
+								typ:  .warning
+								text: "There were no <template> tags in the parser's stack of open elements."
 							)
 							break
 						}
@@ -597,14 +598,14 @@ fn (mut p Parser) in_head_insertion_mode() {
 						p.template_insertion_modes.pop()
 					} else {
 						put(
-							typ: .warning
-							text: 'There were no items on the parer\'s stack of template insertion modes.'
+							typ:  .warning
+							text: "There were no items on the parer's stack of template insertion modes."
 						)
 					}
 					p.reset_insertion_mode_appropriately()
 				} else {
 					put(
-						typ: .warning
+						typ:  .warning
 						text: 'Unexpected end tag </${tag_name}>: ignoring token.'
 					)
 				}
@@ -620,7 +621,7 @@ fn (mut p Parser) in_head_insertion_mode() {
 fn (mut p Parser) in_head_no_script_insertion_mode() {
 	anything_else := fn [mut p] () {
 		put(
-			typ: .warning
+			typ:  .warning
 			text: 'Parse error: ${p.insertion_mode}'
 		)
 		// Should be a noscript element and the last item in p.open_elems
@@ -633,7 +634,7 @@ fn (mut p Parser) in_head_no_script_insertion_mode() {
 	match mut p.current_token {
 		DoctypeToken {
 			put(
-				typ: .warning
+				typ:  .warning
 				text: 'Unexpected doctype tag: ignoring token.'
 			)
 		}
@@ -646,7 +647,7 @@ fn (mut p Parser) in_head_no_script_insertion_mode() {
 					p.in_head_insertion_mode()
 				} else if tag_name in ['head', 'noscript'] {
 					put(
-						typ: .warning
+						typ:  .warning
 						text: 'Unexpected start tag <${tag_name}>: ignoring token.'
 					)
 				}
@@ -660,14 +661,14 @@ fn (mut p Parser) in_head_no_script_insertion_mode() {
 					anything_else()
 				} else {
 					put(
-						typ: .warning
+						typ:  .warning
 						text: 'Unexpected end tag </${tag_name}>: ignoring token.'
 					)
 				}
 			}
 		}
 		CharacterToken {
-			if p.current_token in parser.whitespace {
+			if p.current_token in whitespace {
 				p.in_head_insertion_mode()
 			}
 		}
@@ -693,7 +694,7 @@ fn (mut p Parser) after_head_insertion_mode() {
 
 	match mut p.current_token {
 		CharacterToken {
-			if p.current_token in parser.whitespace {
+			if p.current_token in whitespace {
 				p.insert_text(p.current_token.str())
 			}
 		}
@@ -702,7 +703,7 @@ fn (mut p Parser) after_head_insertion_mode() {
 		}
 		DoctypeToken {
 			put(
-				typ: .warning
+				typ:  .warning
 				text: 'Unexpected doctype token: ignoring token.'
 			)
 		}
@@ -719,9 +720,10 @@ fn (mut p Parser) after_head_insertion_mode() {
 				} else if tag_name == 'frameset' {
 					p.insert_html_element()
 					p.insertion_mode = .in_frameset
-				} else if tag_name in ['base', 'basefont', 'bgsound', 'link', 'meta', 'noframes', 'script', 'style', 'template', 'title'] {
+				} else if tag_name in ['base', 'basefont', 'bgsound', 'link', 'meta', 'noframes',
+					'script', 'style', 'template', 'title'] {
 					put(
-						typ: .warning
+						typ:  .warning
 						text: 'Unexpected start tag <${tag_name}>: ignoring token.'
 					)
 					if head := p.doc.head {
@@ -734,24 +736,23 @@ fn (mut p Parser) after_head_insertion_mode() {
 							}
 						}
 						put(
-							typ: .warning
+							typ:  .warning
 							text: 'No head element found in document.'
 						)
 					} else {
 						put(
-							typ: .warning
+							typ:  .warning
 							text: 'No head element found in document.'
 						)
 					}
 				} else if tag_name == 'head' {
 					put(
-						typ: .warning
+						typ:  .warning
 						text: 'Unexpected start tag <head>: ignoring token.'
 					)
 				} else {
 					anything_else()
 				}
-				
 			} else { // end tag
 				if tag_name == 'template' {
 					p.in_head_insertion_mode()
@@ -759,7 +760,7 @@ fn (mut p Parser) after_head_insertion_mode() {
 					anything_else()
 				} else {
 					put(
-						typ: .warning
+						typ:  .warning
 						text: 'Unexpected end tag </${tag_name}>: ignoring token.'
 					)
 				}
@@ -777,10 +778,10 @@ fn (mut p Parser) in_body_insertion_mode() {
 		CharacterToken {
 			if p.current_token == rune(0) {
 				put(
-					typ: .warning
+					typ:  .warning
 					text: 'Unexpected null character token: ignoring token.'
 				)
-			} else if p.current_token in parser.whitespace {
+			} else if p.current_token in whitespace {
 				p.reconstruct_active_formatting_elements()
 				p.insert_text(p.current_token.str())
 			} else {
@@ -794,7 +795,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 		}
 		DoctypeToken {
 			put(
-				typ: .warning
+				typ:  .warning
 				text: 'Unexpected doctype token: ignoring token.'
 			)
 		}
@@ -804,19 +805,19 @@ fn (mut p Parser) in_body_insertion_mode() {
 				match tag_name {
 					'html' {
 						put_prefix := put(
-							typ: .warning
-							text: 'Unexpected start tag <html>'
+							typ:     .warning
+							text:    'Unexpected start tag <html>'
 							newline: false
-							print: false
+							print:   false
 						)
 						if p.open_elems.has_by_tag_name('template') {
 							put(
-								typ: .warning
+								typ:  .warning
 								text: '${put_prefix}: ignoring token.'
 							)
 						} else {
 							put(
-								typ: .warning
+								typ:  .warning
 								text: '${put_prefix}.'
 							)
 							// Adam: I've got to be misunderstanding something here. There's no way we're supposed
@@ -833,26 +834,28 @@ fn (mut p Parser) in_body_insertion_mode() {
 							}
 						}
 					}
-					'base', 'basefont', 'bgsound', 'link', 'meta', 'noframes', 'script', 'style', 'template', 'title' {
+					'base', 'basefont', 'bgsound', 'link', 'meta', 'noframes', 'script', 'style',
+					'template', 'title' {
 						p.in_head_insertion_mode()
 					}
 					'body' {
 						put_prefix := put(
-							typ: .warning
-							text: 'Unexpected start tag <body>'
+							typ:     .warning
+							text:    'Unexpected start tag <body>'
 							newline: false
-							print: false
+							print:   false
 						)
 						second_elem_is_body := &dom.HTMLElement(p.open_elems[1] or {
 							put(
-								typ: .warning
+								typ:  .warning
 								text: '${put_prefix}: ignoring token.'
 							)
 							return
 						}).tag_name == 'body'
-						if p.open_elems.len == 1 || !second_elem_is_body || p.open_elems.has_by_tag_name('template') {
+						if p.open_elems.len == 1 || !second_elem_is_body
+							|| p.open_elems.has_by_tag_name('template') {
 							put(
-								typ: .warning
+								typ:  .warning
 								text: '${put_prefix}: ignoring token.'
 							)
 						} else {
@@ -873,21 +876,21 @@ fn (mut p Parser) in_body_insertion_mode() {
 					}
 					'frameset' {
 						put_prefix := put(
-							typ: .warning
-							text: 'Unexpected start tag <frameset>'
+							typ:     .warning
+							text:    'Unexpected start tag <frameset>'
 							newline: false
-							print: false
+							print:   false
 						)
 						second_elem_is_body := &dom.HTMLElement(p.open_elems[1] or {
 							put(
-								typ: .warning
+								typ:  .warning
 								text: '${put_prefix}: ignoring token.'
 							)
 							return
 						}).tag_name == 'body'
 						if p.open_elems.len == 1 || !second_elem_is_body || p.frameset_ok == .not_ok {
 							put(
-								typ: .warning
+								typ:  .warning
 								text: '${put_prefix}: ignoring token.'
 							)
 						} else {
@@ -910,7 +913,9 @@ fn (mut p Parser) in_body_insertion_mode() {
 							p.insertion_mode = .in_frameset
 						}
 					}
-					'address', 'article', 'aside', 'blockquote', 'center', 'details', 'dialog', 'dir', 'div', 'dl', 'fieldset', 'figcaption', 'figure', 'footer', 'header', 'hgroup', 'main', 'menu', 'nav', 'ol', 'p', 'section', 'summary', 'ul' {
+					'address', 'article', 'aside', 'blockquote', 'center', 'details', 'dialog',
+					'dir', 'div', 'dl', 'fieldset', 'figcaption', 'figure', 'footer', 'header',
+					'hgroup', 'main', 'menu', 'nav', 'ol', 'p', 'section', 'summary', 'ul' {
 						// todo: has_element_in_scope
 						// if p.has_element_in_button_scope('p') {
 						// 	p.close_element('p')
@@ -923,9 +928,16 @@ fn (mut p Parser) in_body_insertion_mode() {
 						// 	p.close_element('p')
 						// }
 						if p.open_elems.len > 0 {
-							if &dom.HTMLElement(p.open_elems.last()).tag_name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] {
+							if &dom.HTMLElement(p.open_elems.last()).tag_name in [
+								'h1',
+								'h2',
+								'h3',
+								'h4',
+								'h5',
+								'h6',
+							] {
 								put(
-									typ: .warning
+									typ:  .warning
 									text: 'Unexpected start tag <${tag_name}>'
 								)
 								_ := p.open_elems.pop()
@@ -950,7 +962,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 					'form' {
 						if p.doc.form != none {
 							put(
-								typ: .warning
+								typ:  .warning
 								text: 'Unexpected start tag <form>: ignoring token.'
 							)
 						} else {
@@ -978,7 +990,8 @@ fn (mut p Parser) in_body_insertion_mode() {
 							_ := p // this is just a placeholder to get rid of the warning the p is unused
 						}
 						// "if node is in the special category, but is not an address, div or p element, then jump to done step"
-						node_in_special_category := tag_name in parser.special_tag_names && node_name !in ['address', 'div', 'p']
+						node_in_special_category := tag_name in special_tag_names
+							&& node_name !in ['address', 'div', 'p']
 						if node_in_special_category {
 							done()
 						} else {
@@ -988,7 +1001,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 								p.generate_implied_end_tags(exclude: ['li'])
 								if &dom.HTMLElement(p.open_elems.last()).tag_name != 'li' {
 									put(
-										typ: .warning
+										typ:  .warning
 										text: 'Unexpected start tag <li>.'
 									)
 								}
@@ -1016,10 +1029,10 @@ fn (mut p Parser) in_body_insertion_mode() {
 						p.in_head_insertion_mode()
 					}
 					'body' {
-						// inline comment below is what this should actually be checking for.
-						if false /* !p.has_element_in_scope('body') */ {
+						// !p.has_element_in_scope('body')
+						if false {
 							put(
-								typ: .warning
+								typ:  .warning
 								text: 'Unexpected end tag </body>: ignoring token.'
 							)
 						} else {
@@ -1033,7 +1046,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 							not_these_elements := false
 							if p.open_elems.len > 1 && not_these_elements {
 								put(
-									typ: .warning
+									typ:  .warning
 									text: 'Unexpected end tag </body>.'
 								)
 							} else {
@@ -1042,9 +1055,10 @@ fn (mut p Parser) in_body_insertion_mode() {
 						}
 					}
 					'html' {
-						if false /* !p.has_element_in_scope('body') */ {
+						// !p.has_element_in_scope('body')
+						if false {
 							put(
-								typ: .warning
+								typ:  .warning
 								text: 'Unexpected end tag </html>: ignoring token.'
 							)
 						} else {
@@ -1058,7 +1072,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 							not_these_elements := false
 							if p.open_elems.len > 1 && not_these_elements {
 								put(
-									typ: .warning
+									typ:  .warning
 									text: 'Unexpected end tag </html>.'
 								)
 							} else {
@@ -1086,7 +1100,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 				not_these_elements := false
 				if p.open_elems.len > 1 && not_these_elements {
 					put(
-						typ: .warning
+						typ:  .warning
 						text: 'Unexpected EOF token.'
 					)
 				}
@@ -1100,7 +1114,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 
 fn (mut p Parser) in_template_insertion_mode() {
 	put(
-		typ: .warning
+		typ:  .warning
 		text: 'todo: implement in_template_insertion_mode'
 	)
 }
@@ -1109,7 +1123,7 @@ fn (mut p Parser) in_template_insertion_mode() {
 fn (mut p Parser) text_insertion_mode() {
 	anything_else := fn [mut p] () {
 		put(
-			typ: .warning
+			typ:  .warning
 			text: 'Unexpected token: cannot continue parsing.'
 		)
 		p.insertion_mode = .@none
@@ -1121,7 +1135,7 @@ fn (mut p Parser) text_insertion_mode() {
 		}
 		EOFToken {
 			put(
-				typ: .warning
+				typ:  .warning
 				text: 'Unexpected EOF token.'
 			)
 			if &dom.HTMLElement(p.open_elems.last()).tag_name == 'script' {
@@ -1150,7 +1164,7 @@ fn (mut p Parser) text_insertion_mode() {
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#insert-an-html-element
-[inline]
+@[inline]
 fn (mut p Parser) insert_html_element() &dom.Element {
 	return p.insert_foreign_element(dom.NamespaceURI.html)
 }
@@ -1185,7 +1199,7 @@ fn (mut p Parser) insert_comment() {
 	}
 
 	put(
-		typ: .warning
+		typ:  .warning
 		text: 'Current token is not a comment.'
 	)
 }
@@ -1202,7 +1216,7 @@ fn (mut p Parser) insert_text(text string) {
 	// dropped on the floor."
 	if p.open_elems.len == 0 {
 		put(
-			typ: .notice
+			typ:  .notice
 			text: 'Text nodes cannot be inserted in DOM root. They must go inside an open element. Ignoring token.'
 		)
 		return
@@ -1236,7 +1250,7 @@ fn (mut p Parser) insert_text(text string) {
 	insert_text_node()
 }
 
-[params]
+@[params]
 pub struct GenerateImpliedTagsParams {
 __global:
 	exclude []string
@@ -1262,7 +1276,8 @@ fn (mut p Parser) generate_all_implied_end_tags_thorougly() {
 	}
 
 	mut node := &dom.HTMLElement(p.open_elems.last())
-	for node.tag_name in ['caption', 'colgroup', 'dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'] {
+	for node.tag_name in ['caption', 'colgroup', 'dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb',
+		'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'] {
 		_ := p.open_elems.pop()
 	}
 }
@@ -1286,7 +1301,8 @@ fn (mut p Parser) reconstruct_active_formatting_elements() {
 	// 2) If the last (most recently added) entry in the list of active formatting elements is a
 	// marker, or if it is an element that is in the stack of open elements, then there is nothing
 	// to reconstruct; stop this algorithm.
-	if p.active_formatting_elems.last() is AFEMarker || p.open_elems.has(p.active_formatting_elems.last()) {
+	if p.active_formatting_elems.last() is AFEMarker
+		|| p.open_elems.has(p.active_formatting_elems.last()) {
 		return
 	}
 	// 3) Let entry be the last (most recently added) element in the list of active formatting
@@ -1297,7 +1313,9 @@ fn (mut p Parser) reconstruct_active_formatting_elements() {
 	// then jump to the step labeled create.
 	rewind:
 	if p.active_formatting_elems.len > 1 {
-		unsafe { goto create }
+		unsafe {
+			goto create
+		}
 	}
 	// 5) Let entry be the entry one earlier than entry in the list of active formatting elements.
 	i--
@@ -1305,12 +1323,13 @@ fn (mut p Parser) reconstruct_active_formatting_elements() {
 	// 6) If entry is neither a marker nor an element that is also in the stack of open elements,
 	// go to the step labeled rewind.
 	if entry !is AFEMarker && !p.open_elems.has(entry) {
-		unsafe { goto rewind }
+		unsafe {
+			goto rewind
+		}
 	}
 	// 7) Advance: Let entry be the element one later than entry in the list of active formatting
 	// elements.
 	advance:
-
 	// 8) Create: Insert an HTML element for the token for which the element entry was created,
 	// to obtain new element.
 	create:
@@ -1323,7 +1342,9 @@ fn (mut p Parser) reconstruct_active_formatting_elements() {
 	// 10) If the entry for new element in the list of active formatting elements is not the last
 	// entry in the list, return to the step labeled advance.
 	if p.active_formatting_elems.len > 1 {
-		unsafe { goto advance }
+		unsafe {
+			goto advance
+		}
 	}
 }
 
@@ -1340,7 +1361,7 @@ fn (mut p Parser) reset_insertion_mode_appropriately() {
 			// if the parser was created as part of the HTML fragment parsing algorithm
 			// set the node to the context element passed to that algorithm
 		}
-		
+
 		if mut node is dom.HTMLSelectElement {
 			if last {
 				p.insertion_mode = .in_select

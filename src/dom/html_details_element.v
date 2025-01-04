@@ -7,10 +7,10 @@ pub mut:
 	open bool
 }
 
-[inline]
+@[inline]
 pub fn HTMLDetailsElement.new(owner_document &Document) &HTMLDetailsElement {
 	return &HTMLDetailsElement{
 		owner_document: owner_document
-		tag_name: 'details'
+		tag_name:       'details'
 	}
 }

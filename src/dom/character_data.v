@@ -1,6 +1,6 @@
 module dom
 
-[heap]
+@[heap]
 pub struct CharacterData {
 	Node
 pub mut:
@@ -8,10 +8,10 @@ pub mut:
 	length u64
 }
 
-[inline]
+@[inline]
 pub fn CharacterData.new(owner_document &Document, data string) &CharacterData {
 	return &CharacterData{
 		owner_document: owner_document
-		data: data
+		data:           data
 	}
 }

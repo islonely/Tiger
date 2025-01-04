@@ -21,10 +21,10 @@ pub mut:
 	cell_spacing string
 }
 
-[inline]
+@[inline]
 pub fn HTMLTableElement.new(owner_document &Document) &HTMLTableElement {
 	return &HTMLTableElement{
 		owner_document: owner_document
-		tag_name: 'table'
+		tag_name:       'table'
 	}
 }

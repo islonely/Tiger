@@ -12,10 +12,10 @@ pub mut:
 	width    string
 }
 
-[inline]
+@[inline]
 pub fn HTMLHRElement.new(owner_document &Document) &HTMLHRElement {
 	return &HTMLHRElement{
 		owner_document: owner_document
-		tag_name: 'hr'
+		tag_name:       'hr'
 	}
 }

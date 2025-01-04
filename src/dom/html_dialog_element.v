@@ -8,10 +8,10 @@ pub mut:
 	return_value string
 }
 
-[inline]
+@[inline]
 pub fn HTMLDialogElement.new(owner_document &Document) &HTMLDialogElement {
 	return &HTMLDialogElement{
 		owner_document: owner_document
-		tag_name: 'dialog'
+		tag_name:       'dialog'
 	}
 }

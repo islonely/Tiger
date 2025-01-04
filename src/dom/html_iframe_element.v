@@ -25,10 +25,10 @@ pub mut:
 	margin_width  string
 }
 
-[inline]
+@[inline]
 pub fn HTMLIframeElement.new(owner_document &Document) &HTMLIframeElement {
 	return &HTMLIframeElement{
 		owner_document: owner_document
-		tag_name: 'iframe'
+		tag_name:       'iframe'
 	}
 }

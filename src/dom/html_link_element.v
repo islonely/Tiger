@@ -26,10 +26,10 @@ pub mut:
 	target  string
 }
 
-[inline]
+@[inline]
 pub fn HTMLLinkElement.new(owner_document &Document) &HTMLLinkElement {
 	return &HTMLLinkElement{
 		owner_document: owner_document
-		tag_name: 'link'
+		tag_name:       'link'
 	}
 }

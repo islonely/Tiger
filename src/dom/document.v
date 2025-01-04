@@ -27,7 +27,7 @@ pub enum DocumentFormatType {
 // type HTMLOrSVGScriptElement = HTMLScriptElement | SVGScriptElement
 
 // https://html.spec.whatwg.org/multipage/dom.html#document
-[heap]
+@[heap]
 pub struct Document {
 	// spec doesn't say this extends Node, but from the language it
 	// uses it appears it does?
@@ -73,7 +73,7 @@ pub mut:
 	bg_color    string
 }
 
-[inline]
+@[inline]
 pub fn Document.new() &Document {
 	// this is stupid imo, but the spec calls for it
 	mut doc := &Document{
@@ -84,7 +84,7 @@ pub fn Document.new() &Document {
 }
 
 // has_child_nodes returns whether or not the embedded Node has children.
-[inline]
+@[inline]
 pub fn (doc Document) has_child_nodes() bool {
 	return doc.child_nodes.len > 0
 }
@@ -120,13 +120,13 @@ pub fn (mut doc Document) to_html() string {
 }
 
 // pretty_print prints a pretty list of all the document's descendants.
-[inline]
+@[inline]
 pub fn (doc Document) pretty_print() {
 	println(doc.pretty_string())
 }
 
 // pretty_string returns the Document as a tree.
-[inline]
+@[inline]
 pub fn (doc Document) pretty_string() string {
 	uri := if doc.base_uri != '' { doc.base_uri } else { '<no_uri>' }
 	mut doc_as_node := &NodeInterface(doc)

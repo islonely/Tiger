@@ -11,15 +11,16 @@ __global:
 	global_y         int
 	width            int
 	height           int                 = 50
-	padding          Padding             = Padding.xy(15, 10)
+	padding          Padding             = Padding.all(10)
 	radius           int                 = 5
 	font_size        int                 = 18
-	font_color       gx.Color            = gx.hex(0xEEEEEEFF)
-	bg_color         gx.Color            = gx.hex(0x333333FF)
-	placeholder      ?string             = 'https://example.com'
+	font_color       gx.Color            = gx.hex(0xEEEEEE)
+	bg_color         gx.Color            = gx.hex(0x333333)
 	value            strings.Builder     = strings.new_builder(500)
 	vertical_align   VerticalAlignment   = .middle
 	horizontal_align HorizontalAlignment = .left
+	cursor           PipeCursor
+	has_focus        bool = true
 }
 
 // text_pos generates the X and Y position for the text based on the alignment
@@ -38,19 +39,33 @@ fn (field TextField) text_pos(mut context gg.Context, text string) (int, int) {
 	return x, y
 }
 
+fn (field TextField) cursor_pos(mut context gg.Context) (int, int) {
+	text_x, text_y := field.text_pos(mut context, field.value.bytestr())
+	cursor_x := text_x + context.text_width(field.value.bytestr())
+	cursor_y := text_y - if field.value.len == 0 { field.font_size / 2 } else { 0 }
+	return cursor_x, cursor_y
+}
+
 // draw draws the text field to the context.
 pub fn (mut field TextField) draw(mut context gg.Context) {
 	context.draw_rounded_rect_filled(field.global_x, field.global_y, field.width, field.height,
 		field.radius, field.bg_color)
 
 	context.set_text_cfg(size: field.font_size)
-	if placeholder := field.placeholder {
-		if field.value.len == 0 {
-			field_x, field_y := field.text_pos(mut context, placeholder)
-			context.draw_text(field_x, field_y, placeholder,
-				size: field.font_size
-				color: field.font_color
-			)
+	field_x, field_y := field.text_pos(mut context, field.value.bytestr())
+	context.draw_text(field_x, field_y, field.value.bytestr(),
+		size:  field.font_size
+		color: field.font_color
+	)
+
+	field.cursor.update()
+	if field.has_focus {
+		if field.cursor.blink_visibility {
+			// draw cursor
+			x, y := field.cursor_pos(mut context)
+			w := 2
+			h := field.font_size
+			context.draw_rect_filled(x, y, w, h, gx.hex(0x7489FF))
 		}
 	}
 }

@@ -5,10 +5,10 @@ pub struct HTMLSpanElement {
 	HTMLElement
 }
 
-[inline]
+@[inline]
 pub fn HTMLSpanElement.new(owner_document &Document) &HTMLSpanElement {
 	return &HTMLSpanElement{
 		owner_document: owner_document
-		tag_name: 'span'
+		tag_name:       'span'
 	}
 }

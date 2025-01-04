@@ -8,10 +8,10 @@ pub mut:
 	height u64
 }
 
-[inline]
+@[inline]
 pub fn HTMLCanvasElement.new(owner_document &Document) &HTMLCanvasElement {
 	return &HTMLCanvasElement{
 		owner_document: owner_document
-		tag_name: 'canvas'
+		tag_name:       'canvas'
 	}
 }

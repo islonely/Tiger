@@ -49,15 +49,15 @@ __global:
 	html_for string
 }
 
-[inline]
+@[inline]
 pub fn HTMLScriptElement.new(owner_document &Document) &HTMLScriptElement {
 	return &HTMLScriptElement{
 		owner_document: owner_document
-		tag_name: 'script'
+		tag_name:       'script'
 	}
 }
 
-[params]
+@[params]
 pub struct ScriptMarkAsReadyParams {
 __global:
 	script_result ?ScriptResult

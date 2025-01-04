@@ -4,11 +4,10 @@ import dom
 import gg
 
 // Viewport is the part of the window that the web page is rendered to.
-[heap]
+@[heap]
 pub struct Viewport {
-mut:
-	context &gg.Context
 pub mut:
+	context  &gg.Context
 	global_x int
 	global_y int
 	width    int
@@ -21,11 +20,11 @@ __global:
 // Viewport.new creates a new Viewport with the given width and height.
 pub fn Viewport.new(mut context gg.Context, global_x int, global_y int, width int, height int) &Viewport {
 	return &Viewport{
-		context: context
+		context:  context
 		global_x: global_x
 		global_y: global_y
-		width: width
-		height: height
+		width:    width
+		height:   height
 	}
 }
 

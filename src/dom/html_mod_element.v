@@ -8,10 +8,10 @@ pub mut:
 	date_time string
 }
 
-[inline]
+@[inline]
 pub fn HTMLModElement.new(owner_document &Document) &HTMLModElement {
 	return &HTMLModElement{
 		owner_document: owner_document
-		tag_name: 'mod'
+		tag_name:       'mod'
 	}
 }

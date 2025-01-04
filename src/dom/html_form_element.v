@@ -34,10 +34,10 @@ pub mut:
 	length u64
 }
 
-[inline]
+@[inline]
 pub fn HTMLFormElement.new(owner_document &Document) &HTMLFormElement {
 	return &HTMLFormElement{
 		owner_document: owner_document
-		tag_name: 'form'
+		tag_name:       'form'
 	}
 }

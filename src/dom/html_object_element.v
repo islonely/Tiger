@@ -29,10 +29,10 @@ pub mut:
 	border    string
 }
 
-[inline]
+@[inline]
 pub fn HTMLObjectElement.new(owner_document &Document) &HTMLObjectElement {
 	return &HTMLObjectElement{
 		owner_document: owner_document
-		tag_name: 'object'
+		tag_name:       'object'
 	}
 }

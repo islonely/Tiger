@@ -11,6 +11,6 @@ pub mut:
 pub fn HTMLBaseElement.new(owner_document &Document) &HTMLBaseElement {
 	return &HTMLBaseElement{
 		owner_document: owner_document
-		tag_name: 'base'
+		tag_name:       'base'
 	}
 }

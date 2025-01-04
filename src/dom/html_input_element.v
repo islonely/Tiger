@@ -53,10 +53,10 @@ pub mut:
 	use_map string
 }
 
-[inline]
+@[inline]
 pub fn HTMLInputElement.new(owner_document &Document) &HTMLInputElement {
 	return &HTMLInputElement{
 		owner_document: owner_document
-		tag_name: 'input'
+		tag_name:       'input'
 	}
 }

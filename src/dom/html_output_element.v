@@ -16,10 +16,10 @@ pub mut:
 	labels             []&Node
 }
 
-[inline]
+@[inline]
 pub fn HTMLOutputElement.new(owner_document &Document) &HTMLOutputElement {
 	return &HTMLOutputElement{
 		owner_document: owner_document
-		tag_name: 'output'
+		tag_name:       'output'
 	}
 }

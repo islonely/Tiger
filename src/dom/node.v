@@ -3,16 +3,14 @@ module dom
 import strings
 
 // https://infra.spec.whatwg.org/#html-namespace
-const (
-	namespace = {
-		'html':   'http://www.w3.org/1999/xhtml'
-		'mathml': 'http://www.w3.org/1998/Math/MathML'
-		'svg':    'http://www.w3.org/2000/svg'
-		'xlink':  'http://www.w3.org/1999/xlink'
-		'xml':    'http://www.w3.org/XML/1998/namespace'
-		'xmlns':  'http://www.w3.org/2000/xmlns/'
-	}
-)
+const namespace = {
+	'html':   'http://www.w3.org/1999/xhtml'
+	'mathml': 'http://www.w3.org/1998/Math/MathML'
+	'svg':    'http://www.w3.org/2000/svg'
+	'xlink':  'http://www.w3.org/1999/xlink'
+	'xml':    'http://www.w3.org/XML/1998/namespace'
+	'xmlns':  'http://www.w3.org/2000/xmlns/'
+}
 
 // CommentNode
 pub struct CommentNode {
@@ -25,13 +23,13 @@ pub mut:
 pub fn CommentNode.new(owner_document &Document, text string) &CommentNode {
 	return &CommentNode{
 		owner_document: owner_document
-		text: text
-		node_type: .comment
+		text:           text
+		node_type:      .comment
 	}
 }
 
 pub enum NodeType {
-	element                = 1
+	element = 1
 	attributetext
 	cdata_section
 	entity_reference
@@ -53,7 +51,7 @@ pub enum DocumentPosition {
 	implementation_specific = 20
 }
 
-[params]
+@[params]
 struct GetRootNodeOptions {
 	composed bool
 }
@@ -61,23 +59,23 @@ struct GetRootNodeOptions {
 // https://dom.spec.whatwg.org/#node
 pub interface NodeInterface {
 mut:
-	node_type NodeType
-	node_name string
-	base_uri string
-	is_connected bool
+	node_type      NodeType
+	node_name      string
+	base_uri       string
+	is_connected   bool
 	owner_document ?&Document
-	parent_node ?&NodeInterface
+	parent_node    ?&NodeInterface
 	parent_element ?&Element
-	child_nodes []&NodeInterface
-	first_child ?&NodeInterface
-	last_child ?&NodeInterface
-	prev_sibling ?&NodeInterface
-	next_sibling ?&NodeInterface
-	node_value ?string
-	text_content ?string
+	child_nodes    []&NodeInterface
+	first_child    ?&NodeInterface
+	last_child     ?&NodeInterface
+	prev_sibling   ?&NodeInterface
+	next_sibling   ?&NodeInterface
+	node_value     ?string
+	text_content   ?string
 }
 
-[heap]
+@[heap]
 pub struct Node {
 	// EventTarget
 pub mut:
@@ -98,7 +96,7 @@ pub mut:
 }
 
 // has_child_nodes returns whether or not the Node has children nodes.
-[inline]
+@[inline]
 pub fn (n NodeInterface) has_child_nodes() bool {
 	return n.child_nodes.len > 0
 }

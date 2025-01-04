@@ -14,10 +14,10 @@ pub mut:
 	validation_message string
 }
 
-[inline]
+@[inline]
 pub fn HTMLFieldSetElement.new(owner_document &Document) &HTMLFieldSetElement {
 	return &HTMLFieldSetElement{
 		owner_document: owner_document
-		tag_name: 'fieldset'
+		tag_name:       'fieldset'
 	}
 }

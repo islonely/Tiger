@@ -7,11 +7,11 @@ pub mut:
 	whole_text string
 }
 
-[inline]
+@[inline]
 pub fn Text.new(owner_document &Document, data string) &Text {
 	return &Text{
-		data: data
-		node_type: .cdata_section
+		data:           data
+		node_type:      .cdata_section
 		owner_document: owner_document
 	}
 }

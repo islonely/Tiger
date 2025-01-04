@@ -20,10 +20,10 @@ pub mut:
 	// track TextTrack
 }
 
-[inline]
+@[inline]
 pub fn HTMLTrackElement.new(owner_document &Document) &HTMLTrackElement {
 	return &HTMLTrackElement{
 		owner_document: owner_document
-		tag_name: 'track'
+		tag_name:       'track'
 	}
 }

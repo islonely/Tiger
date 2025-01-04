@@ -7,10 +7,10 @@ pub mut:
 	cite string
 }
 
-[inline]
+@[inline]
 pub fn HTMLQuoteElement.new(owner_document &Document) &HTMLQuoteElement {
 	return &HTMLQuoteElement{
 		owner_document: owner_document
-		tag_name: 'quote'
+		tag_name:       'quote'
 	}
 }

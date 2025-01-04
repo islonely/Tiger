@@ -7,10 +7,10 @@ pub mut:
 	date_time string
 }
 
-[inline]
+@[inline]
 pub fn HTMLTimeElement.new(owner_document &Document) &HTMLTimeElement {
 	return &HTMLTimeElement{
 		owner_document: owner_document
-		tag_name: 'time'
+		tag_name:       'time'
 	}
 }

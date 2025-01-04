@@ -17,10 +17,10 @@ pub mut:
 pub fn (doctype DocumentType) to_html() string {
 	mut builder := strings.new_builder(200)
 	builder.write_string('<!DOCTYPE ${doctype.name}')
-	if doctype.public_id.len > 0 && doctype.public_id != dom.doctype_missing {
+	if doctype.public_id.len > 0 && doctype.public_id != doctype_missing {
 		builder.write_string(' PUBLIC ${doctype.public_id}')
 	}
-	if doctype.system_id.len > 0 && doctype.system_id != dom.doctype_missing {
+	if doctype.system_id.len > 0 && doctype.system_id != doctype_missing {
 		builder.write_string(' SYSTEM ${doctype.system_id}')
 	}
 	builder.writeln('>')

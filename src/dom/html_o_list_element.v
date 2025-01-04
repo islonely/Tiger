@@ -11,10 +11,10 @@ pub mut:
 	compact bool
 }
 
-[inline]
+@[inline]
 pub fn HTMLOListElement.new(owner_document &Document) &HTMLOListElement {
 	return &HTMLOListElement{
 		owner_document: owner_document
-		tag_name: 'ol'
+		tag_name:       'ol'
 	}
 }

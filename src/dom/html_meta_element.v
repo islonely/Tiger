@@ -12,10 +12,10 @@ pub mut:
 	scheme string
 }
 
-[inline]
+@[inline]
 pub fn HTMLMetaElement.new(owner_document &Document) &HTMLMetaElement {
 	return &HTMLMetaElement{
 		owner_document: owner_document
-		tag_name: 'meta'
+		tag_name:       'meta'
 	}
 }

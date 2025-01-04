@@ -23,10 +23,10 @@ pub mut:
 	bg_color string
 }
 
-[inline]
+@[inline]
 pub fn HTMLTableCellElement.new(owner_document &Document) &HTMLTableCellElement {
 	return &HTMLTableCellElement{
 		owner_document: owner_document
-		tag_name: 'td'
+		tag_name:       'td'
 	}
 }

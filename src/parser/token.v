@@ -27,34 +27,42 @@ const doctype_missing = Builder('\0\0\0\0\0\0\0\0'.bytes())
 // HTML documents.
 struct DoctypeToken {
 mut:
-	name Builder = doctype_missing
+	name              Builder = doctype_missing
 	public_identifier Builder = doctype_missing
 	system_identifier Builder = doctype_missing
-	force_quirks bool
+	force_quirks      bool
 }
 
 // name gets the contents of DoctypeToken.name string builder.
-[inline]
+@[inline]
 pub fn (tok DoctypeToken) name() string {
 	return tok.name.bytestr()
 }
 
 // public_identifier gets the contents of DoctypeToken.public_identifier string builder.
-[inline]
+@[inline]
 pub fn (tok DoctypeToken) public_identifier() string {
 	return tok.public_identifier.bytestr()
 }
 
 // system_identifier gets the contents of DoctypeToken.system_identifier string builder.
-[inline]
+@[inline]
 pub fn (tok DoctypeToken) system_identifier() string {
 	return tok.system_identifier.bytestr()
 }
 
 // html returns the HTML code reprensentation of the DoctypeToken.
-[inline]
+@[inline]
 pub fn (tok DoctypeToken) html() string {
-	return '<!DOCTYPE ${tok.name}' + if tok.public_identifier != doctype_missing {'public="${tok.public_identifier()}"'} else {''} + if tok.system_identifier != doctype_missing {' system="${tok.system_identifier()}"'} else {''} + '>'
+	return '<!DOCTYPE ${tok.name}' + if tok.public_identifier != doctype_missing {
+		'public="${tok.public_identifier()}"'
+	} else {
+		''
+	} + if tok.system_identifier != doctype_missing {
+		' system="${tok.system_identifier()}"'
+	} else {
+		''
+	} + '>'
 }
 
 // TagToken represents the occurence of <tag attribute="value"></tag>
@@ -64,18 +72,18 @@ struct TagToken {
 mut:
 	self_closing bool
 	// <blockquote> is the longest (10 characters) HTML tag name.
-	name Builder = strings.new_builder(10)
+	name       Builder = new_builder(10)
 	attributes []Attribute
 }
 
 // name gets the contents of TagToken.name string builder.
-[inline]
+@[inline]
 pub fn (tok TagToken) name() string {
 	return tok.name.bytestr()
 }
 
 // html returns the HTML code representation of the TagToken.
-[inline]
+@[inline]
 pub fn (tok TagToken) html() string {
 	mut bldr := new_builder(100)
 	if !tok.is_start {
@@ -85,7 +93,7 @@ pub fn (tok TagToken) html() string {
 	for attr in tok.attributes {
 		bldr.write_string(' ${attr.name()}="${attr.value()}"')
 	}
-	bldr.write_string(if tok.self_closing {' />'} else {'>'})
+	bldr.write_string(if tok.self_closing { ' />' } else { '>' })
 	return bldr.str()
 }
 
@@ -95,18 +103,18 @@ struct Attribute {
 mut:
 	// onloadedmetadata is the longest (16 characters) vanilla HTML
 	// attribute.
-	name Builder = strings.new_builder(16)
-	value Builder = strings.new_builder(100)
+	name  Builder = new_builder(16)
+	value Builder = new_builder(100)
 }
 
 // name gets the contents of the Attribute.name string builder.
-[inline]
+@[inline]
 pub fn (attr Attribute) name() string {
 	return attr.name.bytestr()
 }
 
 // value gets the content of the Attribute.value string builder.
-[inline]
+@[inline]
 pub fn (attr Attribute) value() string {
 	return attr.value.bytestr()
 }
@@ -125,17 +133,17 @@ pub fn (attrs []Attribute) to_map() map[string]string {
 // document.
 struct CommentToken {
 mut:
-	data Builder = strings.new_builder(100)
+	data Builder = new_builder(100)
 }
 
 // data gets the contents of the CommentToken.data string builder.
-[inline]
+@[inline]
 pub fn (tok CommentToken) data() string {
 	return tok.data.bytestr()
 }
 
 // html returns the HTML code representation of the CommentToken.
-[inline]
+@[inline]
 pub fn (tok CommentToken) html() string {
 	return '<!--' + tok.data.bytestr() + '-->'
 }

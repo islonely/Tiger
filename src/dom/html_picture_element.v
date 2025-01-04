@@ -5,10 +5,10 @@ pub struct HTMLPictureElement {
 	HTMLElement
 }
 
-[inline]
+@[inline]
 pub fn HTMLPictureElement.new(owner_document &Document) &HTMLPictureElement {
 	return &HTMLPictureElement{
 		owner_document: owner_document
-		tag_name: 'picture'
+		tag_name:       'picture'
 	}
 }

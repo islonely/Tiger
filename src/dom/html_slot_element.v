@@ -1,6 +1,6 @@
 module dom
 
-[params]
+@[params]
 struct AssignedNodesOptions {
 	flatten bool
 }
@@ -12,10 +12,10 @@ pub mut:
 	name string
 }
 
-[inline]
+@[inline]
 pub fn HTMLSlotElement.new(owner_document &Document) &HTMLSlotElement {
 	return &HTMLSlotElement{
 		owner_document: owner_document
-		tag_name: 'slot'
+		tag_name:       'slot'
 	}
 }

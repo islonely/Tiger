@@ -14,10 +14,10 @@ pub mut:
 	index            i64
 }
 
-[inline]
+@[inline]
 pub fn HTMLOptionElement.new(owner_document &Document) &HTMLOptionElement {
 	return &HTMLOptionElement{
 		owner_document: owner_document
-		tag_name: 'option'
+		tag_name:       'option'
 	}
 }

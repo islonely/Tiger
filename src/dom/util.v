@@ -9,7 +9,7 @@ type ElementStack = []&Element
 fn (mut stack ElementStack) pop() ?&Element {
 	if stack.len > 0 {
 		ret := stack.last()
-		stack.delete(stack.len-1)
+		stack.delete(stack.len - 1)
 		return ret
 	} else {
 		return none

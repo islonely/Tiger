@@ -13,10 +13,10 @@ pub mut:
 	name  string
 }
 
-[inline]
+@[inline]
 pub fn HTMLEmbedElement.new(owner_document &Document) &HTMLEmbedElement {
 	return &HTMLEmbedElement{
 		owner_document: owner_document
-		tag_name: 'embed'
+		tag_name:       'embed'
 	}
 }
