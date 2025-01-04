@@ -1165,12 +1165,12 @@ fn (mut p Parser) text_insertion_mode() {
 
 // https://html.spec.whatwg.org/multipage/parsing.html#insert-an-html-element
 @[inline]
-fn (mut p Parser) insert_html_element() &dom.Element {
+fn (mut p Parser) insert_html_element() &dom.ElementInterface {
 	return p.insert_foreign_element(dom.NamespaceURI.html)
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#insert-a-foreign-element
-fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI) &dom.Element {
+fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI) &dom.ElementInterface {
 	mut tag_token := p.current_token as TagToken
 	mut child := dom.HTMLElement.new(p.doc, tag_token.name())
 	child.namespace_uri = dom.namespaces[namespace_uri]
@@ -1184,7 +1184,7 @@ fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI) &dom.El
 		p.doc.append_child(child)
 	}
 	p.open_elems << child
-	return &dom.Element(child)
+	return &dom.ElementInterface(child)
 }
 
 // insert_comment adds a comment to the last opened element (and always assumes

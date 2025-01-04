@@ -1,12 +1,12 @@
 module dom
 
-// ElementStack is an array of Element references.
-// Stack[&Element]{} seems to be producing an error.
-type ElementStack = []&Element
+// ElementInterfaceStack is an array of ElementInterface references.
+// Stack[&ElementInterface]{} seems to be producing an error.
+type ElementInterfaceStack = []&ElementInterface
 
-// pop returns the last value added to the ElementStack and removes
+// pop returns the last value added to the ElementInterfaceStack and removes
 // said value from the stack or returns none if the stack is empty.
-fn (mut stack ElementStack) pop() ?&Element {
+fn (mut stack ElementInterfaceStack) pop() ?&ElementInterface {
 	if stack.len > 0 {
 		ret := stack.last()
 		stack.delete(stack.len - 1)
@@ -16,9 +16,9 @@ fn (mut stack ElementStack) pop() ?&Element {
 	}
 }
 
-// peek returns the last value added to the ElementStack
+// peek returns the last value added to the ElementInterfaceStack
 // or returns none if the stack is empty.
-fn (mut stack ElementStack) peek() ?&Element {
+fn (mut stack ElementInterfaceStack) peek() ?&ElementInterface {
 	return if stack.len > 0 {
 		stack.last()
 	} else {

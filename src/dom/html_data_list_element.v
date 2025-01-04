@@ -4,7 +4,7 @@ module dom
 pub struct HTMLDataListElement {
 	HTMLElement
 pub mut:
-	options map[string]&Element
+	options map[string]&ElementInterface
 }
 
 @[inline]

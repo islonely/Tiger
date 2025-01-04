@@ -7,5 +7,5 @@ pub struct Attribute {
 	local_name    string
 	name          string
 	value         string
-	owner_element ?&Element
+	owner_element ?&ElementInterface
 }

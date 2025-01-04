@@ -5,7 +5,7 @@ type FloatingBoolString = bool | f64 | string
 // https://html.spec.whatwg.org/multipage/dom.html#htmlelement
 pub struct HTMLElement {
 	Node // GlobalEventHandlers
-	// ElementContentEditable
+	// ElementInterfaceContentEditable
 	// HTMLOrSVGElement
 pub mut:
 	// metadata

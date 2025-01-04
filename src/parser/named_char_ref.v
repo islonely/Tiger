@@ -143,7 +143,7 @@ const named_char_ref = {
 	'&Efr;':                             0xd835dd08
 	'&Egrave':                           0x00c8
 	'&Egrave;':                          0x00c8
-	'&Element;':                         0x2208
+	'&ElementInterface;':                0x2208
 	'&Emacr;':                           0x0112
 	'&EmptySmallSquare;':                0x25fb
 	'&EmptyVerySmallSquare;':            0x25ab

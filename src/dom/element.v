@@ -33,7 +33,7 @@ struct ShadowRootInit {
 }
 
 // https://dom.spec.whatwg.org/#interface-element
-pub interface Element {
+pub interface ElementInterface {
 	NodeInterface
 mut:
 	prefix        ?string
@@ -47,15 +47,29 @@ mut:
 	namespace_uri ?string
 }
 
-// has_attributes returns whether or not the Element
+pub struct Element {
+	Node
+mut:
+	prefix        ?string
+	local_name    string
+	tag_name      string
+	id            string
+	class_name    string
+	class_list    []string
+	slot          string
+	attributes    map[string]string
+	namespace_uri ?string
+}
+
+// has_attributes returns whether or not the ElementInterface
 // has any attributes associated with it.
 @[inline]
-fn (e Element) has_attributes() bool {
+fn (e ElementInterface) has_attributes() bool {
 	return e.attributes.len > 0
 }
 
 // to_html converts the element into HTML.
-pub fn (mut element Element) to_html(depth int) string {
+pub fn (mut element ElementInterface) to_html(depth int) string {
 	mut builder := strings.new_builder(1000)
 	builder.write_string('\t'.repeat(depth) + '<${element.tag_name}')
 	for attribute_name, attribute_value in element.attributes {
@@ -66,7 +80,7 @@ pub fn (mut element Element) to_html(depth int) string {
 		builder.writeln('')
 		for i in 0 .. element.child_nodes.len {
 			mut child_node := element.child_nodes[i]
-			if mut child_node is Element {
+			if mut child_node is ElementInterface {
 				builder.write_string(child_node.to_html(depth + 1))
 			} else if mut child_node is Text {
 				builder.write_string('\t'.repeat(depth + 1) + child_node.data + '\n')

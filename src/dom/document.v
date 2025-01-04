@@ -1,5 +1,6 @@
 module dom
 
+import css
 import strings
 
 pub enum DocumentReadyState {
@@ -37,6 +38,7 @@ pub mut:
 	mode         DocumentMode
 	content_type string
 	scripting    bool = true
+	stylesheet   css.Stylesheet
 	// url                    URL
 	// encoding               Encoding
 	// origin                 Origin
@@ -110,7 +112,7 @@ pub fn (mut doc Document) to_html() string {
 	}
 	for i in 0 .. doc.child_nodes.len {
 		mut child_node := doc.child_nodes[i]
-		if mut child_node is Element {
+		if mut child_node is ElementInterface {
 			builder.writeln(child_node.to_html(0))
 		} else if mut child_node is CommentNode {
 			builder.writeln('<!--${child_node.text}-->')

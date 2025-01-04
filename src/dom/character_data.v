@@ -1,5 +1,12 @@
 module dom
 
+pub interface CharacterDataInterface {
+	NodeInterface
+mut:
+	data   string
+	length u64
+}
+
 @[heap]
 pub struct CharacterData {
 	Node

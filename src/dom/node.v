@@ -65,7 +65,7 @@ mut:
 	is_connected   bool
 	owner_document ?&Document
 	parent_node    ?&NodeInterface
-	parent_element ?&Element
+	parent_element ?&ElementInterface
 	child_nodes    []&NodeInterface
 	first_child    ?&NodeInterface
 	last_child     ?&NodeInterface
@@ -85,7 +85,7 @@ pub mut:
 	is_connected   bool
 	owner_document ?&Document
 	parent_node    ?&NodeInterface
-	parent_element ?&Element
+	parent_element ?&ElementInterface
 	child_nodes    []&NodeInterface
 	first_child    ?&NodeInterface
 	last_child     ?&NodeInterface
@@ -123,7 +123,7 @@ pub fn (mut n NodeInterface) append_child(child &NodeInterface) {
 fn (n NodeInterface) recur_pretty_str(depth int) string {
 	mut bldr := strings.new_builder(n.child_nodes.len * 50)
 	for child in n.child_nodes {
-		name := if child is Element {
+		name := if child is ElementInterface {
 			mut name_builder := strings.new_builder(200)
 			name_builder.write_string(':${child.local_name}')
 			for attr_name, attr_val in child.attributes {

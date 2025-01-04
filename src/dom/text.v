@@ -1,6 +1,13 @@
 module dom
 
 // https://dom.spec.whatwg.org/#interface-text
+pub interface TextInterface {
+	CharacterDataInterface
+mut:
+	whole_text string
+}
+
+@[heap]
 pub struct Text {
 	CharacterData
 pub mut:
