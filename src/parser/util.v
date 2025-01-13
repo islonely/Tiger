@@ -1,6 +1,5 @@
 module parser
 
-import strings
 import term
 
 // Used in `fn put` to write specific colors to screen.

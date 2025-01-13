@@ -125,7 +125,7 @@ fn (n NodeInterface) recur_pretty_str(depth int) string {
 	for child in n.child_nodes {
 		name := if child is ElementInterface {
 			mut name_builder := strings.new_builder(200)
-			name_builder.write_string(':${child.local_name}')
+			name_builder.write_string(':${child.tag_name}')
 			for attr_name, attr_val in child.attributes {
 				name_builder.write_string('&${attr_name}="${attr_val}"')
 			}

@@ -861,6 +861,7 @@ fn (mut t Tokenizer) rawtext_end_tag_name_state() []Token {
 		mut tok := &(t.token as TagToken)
 		tok.name.write_rune(rune_to_lower(t.char))
 		t.buffer.write_rune(t.char)
+		return t.rawtext_end_tag_name_state()
 	}
 
 	return anything_else()
@@ -953,6 +954,7 @@ fn (mut t Tokenizer) script_data_end_tag_name_state() []Token {
 		mut tok := &(t.token as TagToken)
 		tok.name.write_rune(rune_to_lower(t.char))
 		t.buffer.write_rune(t.char)
+		return t.script_data_end_tag_name_state()
 	}
 
 	return anything_else()
