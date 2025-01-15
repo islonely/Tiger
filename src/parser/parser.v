@@ -71,8 +71,12 @@ const public_id_starts_with_if_system_id_missing = [
 	'-//W3C//DTD HTML 4.01 Transitional//',
 ]
 
-const implied_end_tag_names = ['caption', 'colgroup', 'dd', 'li', 'optgroup', 'option', 'p', 'rb',
-	'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead']
+const formatting_tag_names = ['a', 'b', 'big', 'code', 'em', 'font', 'i', 'nobr', 's', 'small',
+	'strike', 'strong', 'tt', 'u']
+
+const implied_end_tag_names = ['dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc']
+const implied_end_tag_names_thorough = ['caption', 'colgroup', 'dd', 'dt', 'li', 'optgroup', 'option',
+	'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr']
 
 // todo: include mathml and svg tags
 const special_tag_names = ['address', 'applet', 'area', 'article', 'aside', 'base', 'basefont',
@@ -84,6 +88,16 @@ const special_tag_names = ['address', 'applet', 'area', 'article', 'aside', 'bas
 	'plaintext', 'pre', 'script', 'section', 'select', 'source', 'style', 'summary', 'table', 'tbody',
 	'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'title', 'tr', 'track', 'ul', 'wbr',
 	'xmp']
+
+// how far up the dom the parser should check for an open element
+// before forcefully closing it.
+// https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-scope
+const default_scope = ['applet', 'caption', 'html', 'table', 'td', 'th', 'marquee', 'object',
+	'template']
+const list_scope = ['ol', 'ul']
+const button_scope = ['button']
+const table_scope = ['html', 'table', 'template']
+const select_scope = ['optgroup', 'option']
 
 // InsertionMode is the mode the parser will parse the token in.
 enum InsertionMode {
@@ -593,7 +607,7 @@ fn (mut p Parser) in_head_insertion_mode() {
 						}
 						template_element = p.open_elems.pop()
 					}
-					p.clear_active_formatting_elements_to_last_marker()
+					p.clear_afe_to_last_marker()
 					if p.template_insertion_modes.len != 0 {
 						p.template_insertion_modes.pop()
 					} else {
@@ -781,12 +795,10 @@ fn (mut p Parser) in_body_insertion_mode() {
 					typ:  .warning
 					text: 'Unexpected null character token: ignoring token.'
 				)
-			} else if p.current_token in whitespace {
-				p.reconstruct_active_formatting_elements()
-				p.insert_text(p.current_token.str())
-			} else {
-				p.reconstruct_active_formatting_elements()
-				p.insert_text(p.current_token.str())
+			}
+			p.reconstruct_afe()
+			p.insert_text(p.current_token.str())
+			if p.current_token !in whitespace {
 				p.frameset_ok = .not_ok
 			}
 		}
@@ -916,17 +928,15 @@ fn (mut p Parser) in_body_insertion_mode() {
 					'address', 'article', 'aside', 'blockquote', 'center', 'details', 'dialog',
 					'dir', 'div', 'dl', 'fieldset', 'figcaption', 'figure', 'footer', 'header',
 					'hgroup', 'main', 'menu', 'nav', 'ol', 'p', 'section', 'summary', 'ul' {
-						// todo: has_element_in_scope
-						// if p.has_element_in_button_scope('p') {
-						// 	p.close_element('p')
-						// }
+						if p.has_element_in_button_scope('p') {
+							p.close_p_element()
+						}
 						p.insert_html_element()
 					}
 					'h1', 'h2', 'h3', 'h4', 'h5', 'h6' {
-						// todo: has_element_in_scope
-						// if p.has_element_in_button_scope('p') {
-						// 	p.close_element('p')
-						// }
+						if p.has_element_in_button_scope('p') {
+							p.close_p_element()
+						}
 						if p.open_elems.len > 0 {
 							if &dom.HTMLElement(p.open_elems.last()).tag_name in [
 								'h1',
@@ -947,9 +957,9 @@ fn (mut p Parser) in_body_insertion_mode() {
 					}
 					'pre', 'listing' {
 						// todo: has_element_in_scope
-						// if p.has_element_in_button_scope('p') {
-						// 	p.close_element('p')
-						// }
+						if p.has_element_in_button_scope('p') {
+							p.close_p_element()
+						}
 						p.insert_html_element()
 						if mut p.next_token is CharacterToken {
 							linefeed := rune(0x000a)
@@ -966,10 +976,9 @@ fn (mut p Parser) in_body_insertion_mode() {
 								text: 'Unexpected start tag <form>: ignoring token.'
 							)
 						} else {
-							// todo: has_element_in_scope
-							// if p.has_element_in_button_scope('p') {
-							// 	p.close_element('p')
-							// }
+							if p.has_element_in_button_scope('p') {
+								p.close_p_element()
+							}
 							p.insert_html_element()
 							if !p.open_elems.has_by_tag_name('template') {
 								p.doc.form = &dom.HTMLFormElement(p.open_elems.last())
@@ -983,11 +992,9 @@ fn (mut p Parser) in_body_insertion_mode() {
 						mut node := p.open_elems[i]
 						node_name := &dom.HTMLElement(node).tag_name
 						done := fn [mut p] () {
-							// todo: has_element_in_scope
-							// if p.has_element_in_button_scope('p') {
-							// 	p.close_element('p')
-							// }
-							_ := p // this is just a placeholder to get rid of the warning the p is unused
+							if p.has_element_in_button_scope('p') {
+								p.close_p_element()
+							}
 						}
 						// "if node is in the special category, but is not an address, div or p element, then jump to done step"
 						node_in_special_category := tag_name in special_tag_names
@@ -1018,8 +1025,43 @@ fn (mut p Parser) in_body_insertion_mode() {
 						}
 						p.insert_html_element()
 					}
+					'dd', 'dt' {
+						// todo: dd, dt
+					}
+					'plaintext' {
+						if p.has_element_in_button_scope('p') {
+							p.close_p_element()
+						}
+						p.insert_html_element()
+						p.tokenizer.state = .plaintext
+					}
+					'button' {
+						if p.has_element_in_scope('button') {
+							put(
+								typ:  .warning
+								text: 'Invalid <button>. There is already a <button> in scope.'
+							)
+							p.generate_implied_end_tags()
+							p.pop_open_elems_until('button')
+						}
+						p.reconstruct_afe()
+						p.insert_html_element()
+						p.frameset_ok = .not_ok
+					}
+					'a' {
+						if p.afe_contains_after_last_marker('a') {
+							put(
+								typ:  .warning
+								text: 'unexpected <a> element; there is already an open <a> element.'
+							)
+							p.adoption_agency_algo()
+						}
+						p.reconstruct_afe()
+						p.insert_html_element()
+						p.insert_afe()
+					}
 					else {
-						p.reconstruct_active_formatting_elements()
+						p.reconstruct_afe()
 						p.insert_html_element()
 					}
 				}
@@ -1122,11 +1164,13 @@ fn (mut p Parser) in_template_insertion_mode() {
 // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incdata
 fn (mut p Parser) text_insertion_mode() {
 	anything_else := fn [mut p] () {
-		put(
-			typ:  .warning
-			text: 'Unexpected token: cannot continue parsing.'
-		)
-		p.insertion_mode = .@none
+		// put(
+		// 	typ:  .warning
+		// 	text: 'Unexpected token: cannot continue parsing.'
+		// )
+		// p.insertion_mode = .@none
+		p.insertion_mode = p.original_insertion_mode
+		p.original_insertion_mode = .@none
 	}
 
 	match mut p.current_token {
@@ -1161,6 +1205,112 @@ fn (mut p Parser) text_insertion_mode() {
 			anything_else()
 		}
 	}
+}
+
+fn (mut p Parser) adoption_agency_algo() {
+	put(
+		typ:  .warning
+		text: 'adoption agency algorithm not implemented'
+	)
+	// // 1. Let subject be token's tag name
+	// subject := (p.current_token as TagToken).name()
+	// // 2. If the current node is an HTML element whose tag name is subject, and the
+	// // current node is not in the list of active formatting elements, then pop the
+	// // current node off the stack of open elements and return.
+	// if p.open_elems.len > 0 {
+	// 	last_elem := p.open_elems.last() as dom.HTMLElement
+	// 	last_tag_name := last_elem.tag_name
+	// 	if last_tag_name == subject {
+	// 		is_in_afe := fn [mut p, last_elem] () bool {
+	// 			for mut afe in p.active_formatting_elems {
+	// 				if mut afe is dom.HTMLElement {
+	// 					// Adam: I am not confident that this will work because I'm not sure how
+	// 					// sumtypes work under the hood and I am questioning myself deeply on this.
+	// 					if voidptr(&afe) == voidptr(&last_elem) {
+	// 						return true
+	// 					}
+	// 				}
+	// 			}
+	// 			return false
+	// 		}()
+	// 	}
+	// }
+}
+
+// afe_contains_after_last_marker checks if the list of active formatting elements
+// contains a <target_tag_name> element after the last marker.
+fn (mut p Parser) afe_contains_after_last_marker(target_tag_name string) bool {
+	for i := p.active_formatting_elems.len - 1; i >= 0; i-- {
+		afe_item := p.active_formatting_elems[i]
+		if afe_item is AFEMarker {
+			return false
+		}
+		tag_name := (afe_item as dom.HTMLElement).tag_name
+		if tag_name == target_tag_name {
+			return true
+		}
+	}
+	return false
+}
+
+// insert_afe
+fn (mut p Parser) insert_afe() {
+	mut tag_token := p.current_token as TagToken
+	mut afe := dom.HTMLElement.new(p.doc, tag_token.name())
+	afe.namespace_uri = dom.namespaces[dom.NamespaceURI.html]
+	for attribute in tag_token.attributes {
+		afe.attributes[attribute.name()] = attribute.value()
+	}
+	// 1.If there are already three elements in the list of active formatting elements
+	// after the last marker, if any, or anywhere in the list if there are no markers,
+	// that have the same tag name, namespace, and attributes as element, then remove
+	// the earliest such element from the list of active formatting elements. For
+	// these purposes, the attributes must be compared as they were when the elements
+	// were created by the parser; two elements have the same attributes if all their
+	// parsed attributes can be paired such that the two attributes in each pair have
+	// identical names, namespaces, and values (the order of the attributes does not
+	// matter).
+	mut count := 0
+	for i := p.active_formatting_elems.len - 1; i >= 0; i-- {
+		mut afe_item := p.active_formatting_elems[i]
+		if afe_item is AFEMarker {
+			break
+		}
+		mut elem := afe_item as dom.HTMLElement
+
+		is_same_elem := elem.tag_name == afe.tag_name && elem.namespace_uri or { '' } == afe.namespace_uri or {
+			''
+		} && p.has_same_attributes(elem, afe)
+		if is_same_elem {
+			count++
+		}
+		if count == 3 {
+			p.active_formatting_elems.delete(i)
+			break
+		}
+	}
+	p.active_formatting_elems << afe
+}
+
+// has_same_attributes compares two elements and returns whether or no they have the same
+// attributes and values.
+//
+// "For these purposes, the attributes must be compared as they were when the elements
+// were created by the parser; two elements have the same attributes if all their
+// parsed attributes can be paired such that the two attributes in each pair have
+// identical names, namespaces, and values (the order of the attributes does not matter)."
+// https://html.spec.whatwg.org/multipage/parsing.html#push-onto-the-list-of-active-formatting-elements
+fn (mut p Parser) has_same_attributes(elem1 dom.HTMLElement, elem2 dom.HTMLElement) bool {
+	if elem1.attributes.len != elem2.attributes.len {
+		return false
+	}
+	for key, elem1_val in elem1.attributes {
+		elem2_val := elem2.attributes[key] or { return false }
+		if elem1_val != elem2_val {
+			return false
+		}
+	}
+	return true
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#insert-an-html-element
@@ -1263,8 +1413,7 @@ fn (mut p Parser) generate_implied_end_tags(params GenerateImpliedTagsParams) {
 	}
 
 	mut node := &dom.HTMLElement(p.open_elems.last())
-	for node.tag_name in ['dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc']
-		&& node.tag_name !in params.exclude {
+	for node.tag_name in implied_end_tag_names && node.tag_name !in params.exclude {
 		_ := p.open_elems.pop()
 	}
 }
@@ -1276,14 +1425,13 @@ fn (mut p Parser) generate_all_implied_end_tags_thorougly() {
 	}
 
 	mut node := &dom.HTMLElement(p.open_elems.last())
-	for node.tag_name in ['caption', 'colgroup', 'dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb',
-		'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'] {
+	for node.tag_name in implied_end_tag_names_thorough {
 		_ := p.open_elems.pop()
 	}
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#clear-the-list-of-active-formatting-elements-up-to-the-last-marker
-fn (mut p Parser) clear_active_formatting_elements_to_last_marker() {
+fn (mut p Parser) clear_afe_to_last_marker() {
 	for p.active_formatting_elems.len > 0 {
 		if p.active_formatting_elems.pop() is AFEMarker {
 			break
@@ -1292,7 +1440,7 @@ fn (mut p Parser) clear_active_formatting_elements_to_last_marker() {
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#reconstruct-the-active-formatting-elements
-fn (mut p Parser) reconstruct_active_formatting_elements() {
+fn (mut p Parser) reconstruct_afe() {
 	// 1) If there are no entries in the list of active formatting elements, then there is nothing
 	// to reconstruct; stop this algorithm.
 	if p.active_formatting_elems.len == 0 {
@@ -1330,6 +1478,8 @@ fn (mut p Parser) reconstruct_active_formatting_elements() {
 	// 7) Advance: Let entry be the element one later than entry in the list of active formatting
 	// elements.
 	advance:
+	i++
+	entry = p.active_formatting_elems[i]
 	// 8) Create: Insert an HTML element for the token for which the element entry was created,
 	// to obtain new element.
 	create:
@@ -1439,4 +1589,89 @@ fn (mut p Parser) reset_insertion_mode_appropriately() {
 		node_index--
 		node = p.open_elems[node_index]
 	}
+}
+
+// close_p_element closes an open <p> element.
+// https://html.spec.whatwg.org/multipage/parsing.html#close-a-p-element
+fn (mut p Parser) close_p_element() {
+	p.generate_implied_end_tags(exclude: ['p'])
+	if p.open_elems.len > 0 {
+		tag_name := &dom.HTMLElement(p.open_elems.last()).tag_name
+		if tag_name != 'p' {
+			put(
+				typ:  .warning
+				text: 'expected <p> element; got <${tag_name}>'
+			)
+		}
+	} else {
+		put(
+			typ:  .warning
+			text: 'expected <p> element; got nothing.'
+		)
+	}
+	p.pop_open_elems_until('p')
+}
+
+// pop_open_elems_until continues to pop the last element from `p.open_elems`
+// until `tag_name` has been popped or the `p.open_elems` is emptied.
+fn (mut p Parser) pop_open_elems_until(target_tag_name string) {
+	mut popped_tag_name := ''
+	for p.open_elems.len > 0 || popped_tag_name == target_tag_name {
+		popped_elem := p.open_elems.pop()
+		popped_tag_name = &dom.HTMLElement(popped_elem).tag_name
+	}
+}
+
+// has_element_in_scope_of checks if `target_tag_name` is opened somewhere in the stack
+// until either the scope boundary is met (`scope`) or the end of the open
+// elements has been reached.
+// https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-scope
+fn (mut p Parser) has_element_in_scope_of(target_tag_name string, scope []string) bool {
+	for i := p.open_elems.len - 1; i >= 0; i-- {
+		open_tag_name := &dom.HTMLElement(p.open_elems[i]).tag_name
+		if open_tag_name in scope || open_tag_name == target_tag_name {
+			return true
+		}
+	}
+	return false
+}
+
+// has_element_in_scope checks if `target_tag_name` is opened somewhere in the stack
+// until either the scope boundary is met (`const default_scope`) or the end of the
+// open elements has been reached.
+@[inline]
+fn (mut p Parser) has_element_in_scope(target_tag_name string) bool {
+	return p.has_element_in_scope_of(target_tag_name, default_scope)
+}
+
+// has_element_in_list_scope checks if `target_tag_name` is opened somewhere in the
+// stack until either the scope boundary is met (`const default_scope`) or the end of
+// the open elements has been reached.
+@[inline]
+fn (mut p Parser) has_element_in_list_scope(target_tag_name string) bool {
+	return p.has_element_in_scope_of(target_tag_name, list_scope)
+}
+
+// has_element_in_button_scope checks if `target_tag_name` is opened somewhere in the
+// stack until either the scope boundary is met (`const default_scope`) or the end of
+// the open elements has been reached.
+@[inline]
+fn (mut p Parser) has_element_in_button_scope(target_tag_name string) bool {
+	return p.has_element_in_scope_of(target_tag_name, button_scope)
+}
+
+// has_element_in_table_scope checks if `target_tag_name` is opened somewhere in the
+// stack until either the scope boundary is met (`const default_scope`) or the end of
+// the open elements has been reached.
+@[inline]
+fn (mut p Parser) has_element_in_table_scope(target_tag_name string) bool {
+	return p.has_element_in_scope_of(target_tag_name, table_scope)
+}
+
+// has_element_in_select_scope checks if `target_tag_name` is opened somewhere in the
+// stack until either the scope boundary is met (`const select_scope`) or the end of
+// the open elements has been reached.
+@[inline]
+fn (mut p Parser) has_element_in_select_scope(target_tag_name string) bool {
+	return p.has_element_in_scope_of(target_tag_name, select_scope)
 }
