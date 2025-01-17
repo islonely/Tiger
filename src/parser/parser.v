@@ -127,43 +127,17 @@ enum InsertionMode {
 	text
 }
 
-// https://html.spec.whatwg.org/multipage/parsing.html#the-list-of-active-formatting-elements
-pub enum AFEMarker {
-	applet
-	object
-	marquee
-	template
-	td
-	th
-	caption
-}
-
-pub type ActiveFormattingElements = AFEMarker | dom.HTMLElement
-
-// https://html.spec.whatwg.org/multipage/parsing.html#other-parsing-state-flags
-pub enum ScriptingFlag {
-	enabled
-	disabled
-}
-
-// https://html.spec.whatwg.org/multipage/parsing.html#other-parsing-state-flags
-pub enum FramesetOKFlag {
-	ok
-	not_ok
-}
-
 // OpenElements is a stack of open elements.
 pub type OpenElements = []&dom.NodeInterface
 
 // has_by_tag_name searches the open elements for a tag with the given tag name
 // and returns true if it's found; false if not.
-pub fn (open_elements OpenElements) has_by_tag_name(tag_names ...string) bool {
-	for element in open_elements {
-		el := &dom.HTMLElement(element)
-		// todo: THIS FUNCTION DOES NOT WORK!
-		// println(term.bright_bg_green(el.tag_name))
-		if el.tag_name in tag_names {
-			return true
+pub fn (mut open_elements OpenElements) has_by_tag_name(tag_names ...string) bool {
+	for mut element in open_elements {
+		if mut element is dom.HTMLElement {
+			if element.tag_name in tag_names {
+				return true
+			}
 		}
 	}
 	return false
@@ -180,26 +154,33 @@ pub fn (open_elements OpenElements) has(looking_for voidptr) bool {
 	return false
 }
 
+// https://html.spec.whatwg.org/multipage/parsing.html#the-list-of-active-formatting-elements
+@[heap]
+pub struct ActiveFormattingElement {
+	dom.HTMLElement
+	is_marker bool
+	token     TagToken
+}
+
 // Parser parses the tokens emitted from the Tokenizer and creates
 // a document tree which is returned from `fn (mut Parser) parse`.
 @[heap]
 struct Parser {
 mut:
 	tokenizer                      Tokenizer
-	insertion_mode                 InsertionMode  = .initial
-	original_insertion_mode        InsertionMode  = .@none
-	scripting                      ScriptingFlag  = .disabled
-	frameset_ok                    FramesetOKFlag = .ok
+	insertion_mode                 InsertionMode = .initial
+	original_insertion_mode        InsertionMode = .@none
+	scripting_enabled              bool
+	frameset_ok                    bool = true
 	template_insertion_modes       []InsertionMode
-	open_elems                     OpenElements
-	active_formatting_elems        []&ActiveFormattingElements
+	open_elements                  OpenElements
+	active_formatting_elements     []&ActiveFormattingElement
 	active_speculative_html_parser ?&Parser
 	doc                            &dom.Document = dom.Document.new()
-	// adjusted_current_NodeBase    &dom.NodeBase
-	last_token      Token
-	current_token   Token
-	next_token      Token
-	reconsume_token bool
+	last_token                     Token
+	current_token                  Token
+	next_token                     Token
+	reconsume_token                bool
 }
 
 // Parser.from_string instantiates a Parser from the source string.
@@ -215,7 +196,8 @@ pub fn Parser.from_runes(src []rune) Parser {
 			source: src
 		}
 	}
-	p.current_token, p.next_token = p.tokenizer.emit_token(), p.tokenizer.emit_token()
+	p.current_token = p.tokenizer.emit_token()
+	p.next_token = p.tokenizer.emit_token()
 	return p
 }
 
@@ -285,7 +267,7 @@ fn (mut p Parser) consume_token() {
 fn (mut p Parser) before_html_insertion_mode() {
 	anything_else := fn [mut p] () {
 		mut child := dom.HTMLElement.new(p.doc, 'html')
-		p.open_elems << child
+		p.open_elements << child
 		p.insertion_mode = .before_head
 		p.reconsume_token = true
 	}
@@ -420,7 +402,7 @@ fn (mut p Parser) before_head_insertion_mode() {
 	anything_else := fn [mut p] () {
 		mut child := dom.HTMLHeadElement.new(p.doc)
 		p.doc.head = child
-		mut last := p.open_elems.last()
+		mut last := p.open_elements.last()
 		last.append_child(child)
 		p.insertion_mode = .in_head
 		return
@@ -480,7 +462,7 @@ fn (mut p Parser) before_head_insertion_mode() {
 fn (mut p Parser) in_head_insertion_mode() {
 	anything_else := fn [mut p] () {
 		// popped item should be head element
-		p.open_elems.pop()
+		p.open_elements.pop()
 		p.insertion_mode = .after_head
 		p.reconsume_token = true
 	}
@@ -501,7 +483,7 @@ fn (mut p Parser) in_head_insertion_mode() {
 			)
 		}
 		TagToken {
-			mut last_opened_elem := p.open_elems.last()
+			mut last_opened_elem := p.open_elements.last()
 			tag_name := p.current_token.name()
 			if p.current_token.is_start {
 				if tag_name == 'html' {
@@ -510,10 +492,10 @@ fn (mut p Parser) in_head_insertion_mode() {
 					p.insert_html_element()
 					// Spec says to immediately pop it.
 					// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead
-					p.open_elems.pop()
+					p.open_elements.pop()
 				} else if tag_name == 'meta' {
 					p.insert_html_element()
-					p.open_elems.pop()
+					p.open_elements.pop()
 
 					// todo: implement substeps 1 and 2 from
 					// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead
@@ -547,14 +529,18 @@ fn (mut p Parser) in_head_insertion_mode() {
 					for attribute in p.current_token.attributes {
 						child.attributes[attribute.name()] = attribute.value()
 					}
-					p.open_elems << child
+					p.open_elements << child
 					p.tokenizer.state = .script_data
 					p.original_insertion_mode = p.insertion_mode
 					p.insertion_mode = .text
 				} else if tag_name == 'template' {
 					p.insert_html_element()
-					p.active_formatting_elems << AFEMarker.template
-					p.frameset_ok = .not_ok
+					p.active_formatting_elements << &ActiveFormattingElement{
+						HTMLElement: p.open_elements.last() as dom.HTMLElement
+						is_marker:   true
+						token:       p.current_token as TagToken
+					}
+					p.frameset_ok = false
 					p.insertion_mode = .in_template
 					p.template_insertion_modes << .in_template
 				} else if tag_name == 'head' {
@@ -567,14 +553,14 @@ fn (mut p Parser) in_head_insertion_mode() {
 				}
 			} else { // end tag
 				if tag_name == 'head' {
-					_ := p.open_elems.pop()
+					_ := p.open_elements.pop()
 					p.insertion_mode = .after_head
 					return
 				} else if tag_name in ['body', 'html', 'br'] {
 					anything_else()
 					return
 				} else if tag_name == 'template' {
-					if !p.open_elems.has_by_tag_name('template') {
+					if !p.open_elements.has_by_tag_name('template') {
 						put(
 							typ:  .warning
 							text: 'Unexpected </template> tag token; ingoring token.'
@@ -583,29 +569,29 @@ fn (mut p Parser) in_head_insertion_mode() {
 					}
 
 					p.generate_all_implied_end_tags_thorougly()
-					if p.open_elems.len == 0 {
+					if p.open_elements.len == 0 {
 						put(
 							typ:  .warning
 							text: 'Unexpected </template> tag token; ignoring token.'
 						)
 						return
 					}
-					mut template_element := p.open_elems.last()
-					if &dom.HTMLElement(template_element).tag_name != 'template' {
+					mut template_element := p.open_elements.last()
+					if (template_element as dom.HTMLElement).tag_name != 'template' {
 						put(
 							typ:  .warning
 							text: 'Current node is not a <template> tag.'
 						)
 					}
-					for &dom.HTMLElement(template_element).tag_name != 'template' {
-						if p.open_elems.len == 0 {
+					for (template_element as dom.HTMLElement).tag_name != 'template' {
+						if p.open_elements.len == 0 {
 							put(
 								typ:  .warning
 								text: "There were no <template> tags in the parser's stack of open elements."
 							)
 							break
 						}
-						template_element = p.open_elems.pop()
+						template_element = p.open_elements.pop()
 					}
 					p.clear_afe_to_last_marker()
 					if p.template_insertion_modes.len != 0 {
@@ -638,9 +624,9 @@ fn (mut p Parser) in_head_no_script_insertion_mode() {
 			typ:  .warning
 			text: 'Parse error: ${p.insertion_mode}'
 		)
-		// Should be a noscript element and the last item in p.open_elems
+		// Should be a noscript element and the last item in p.open_elements
 		// should now be the head element.
-		p.open_elems.pop()
+		p.open_elements.pop()
 		p.insertion_mode = .in_head
 		p.reconsume_token = true
 	}
@@ -667,9 +653,9 @@ fn (mut p Parser) in_head_no_script_insertion_mode() {
 				}
 			} else {
 				if tag_name == 'noscript' {
-					// Should be a noscript element and the last item in p.open_elems
+					// Should be a noscript element and the last item in p.open_elements
 					// should now be the head element.
-					p.open_elems.pop()
+					p.open_elements.pop()
 					p.insertion_mode = .in_head
 				} else if tag_name == 'br' {
 					anything_else()
@@ -700,9 +686,9 @@ fn (mut p Parser) after_head_insertion_mode() {
 	anything_else := fn [mut p] () {
 		mut child := dom.HTMLElement.new(p.doc, 'body')
 		p.doc.body = &dom.HTMLBodyElement(child)
-		mut last_opened_element := p.open_elems.last()
+		mut last_opened_element := p.open_elements.last()
 		last_opened_element.append_child(child)
-		p.open_elems << child
+		p.open_elements << child
 		p.insertion_mode = .in_body
 	}
 
@@ -728,8 +714,8 @@ fn (mut p Parser) after_head_insertion_mode() {
 					p.in_body_insertion_mode()
 				} else if tag_name == 'body' {
 					p.insert_html_element()
-					p.doc.body = &dom.HTMLBodyElement(p.open_elems.last())
-					p.frameset_ok = .not_ok
+					p.doc.body = &dom.HTMLBodyElement(p.open_elements.last())
+					p.frameset_ok = false
 					p.insertion_mode = .in_body
 				} else if tag_name == 'frameset' {
 					p.insert_html_element()
@@ -741,11 +727,11 @@ fn (mut p Parser) after_head_insertion_mode() {
 						text: 'Unexpected start tag <${tag_name}>: ignoring token.'
 					)
 					if head := p.doc.head {
-						p.open_elems << head
+						p.open_elements << head
 						p.in_head_insertion_mode()
-						for p.open_elems.len > 0 {
-							if voidptr(p.open_elems.last()) == voidptr(head) {
-								p.open_elems.pop()
+						for p.open_elements.len > 0 {
+							if voidptr(p.open_elements.last()) == voidptr(head) {
+								p.open_elements.pop()
 								break
 							}
 						}
@@ -799,7 +785,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 			p.reconstruct_afe()
 			p.insert_text(p.current_token.str())
 			if p.current_token !in whitespace {
-				p.frameset_ok = .not_ok
+				p.frameset_ok = false
 			}
 		}
 		CommentToken {
@@ -822,7 +808,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 							newline: false
 							print:   false
 						)
-						if p.open_elems.has_by_tag_name('template') {
+						if p.open_elements.has_by_tag_name('template') {
 							put(
 								typ:  .warning
 								text: '${put_prefix}: ignoring token.'
@@ -839,8 +825,8 @@ fn (mut p Parser) in_body_insertion_mode() {
 							// already present on the top element of the stack of open elements. If it is not,
 							// add the attribute and its corresponding value to that element.
 							for mut attr in p.current_token.attributes {
-								if p.open_elems.len > 0 {
-									mut last_opened_elem := &dom.HTMLElement(p.open_elems.last())
+								if p.open_elements.len > 0 {
+									mut last_opened_elem := p.open_elements.last() as dom.HTMLElement
 									last_opened_elem.attributes[attr.name.str()] = attr.value.str()
 								}
 							}
@@ -857,15 +843,15 @@ fn (mut p Parser) in_body_insertion_mode() {
 							newline: false
 							print:   false
 						)
-						second_elem_is_body := &dom.HTMLElement(p.open_elems[1] or {
+						second_elem_is_body := (p.open_elements[1] or {
 							put(
 								typ:  .warning
 								text: '${put_prefix}: ignoring token.'
 							)
 							return
-						}).tag_name == 'body'
-						if p.open_elems.len == 1 || !second_elem_is_body
-							|| p.open_elems.has_by_tag_name('template') {
+						} as dom.HTMLElement).tag_name == 'body'
+						if p.open_elements.len == 1 || !second_elem_is_body
+							|| p.open_elements.has_by_tag_name('template') {
 							put(
 								typ:  .warning
 								text: '${put_prefix}: ignoring token.'
@@ -875,7 +861,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 							// check to see if the attribute is already present on the body element (the second
 							// element) on the stack of open elements, and if it is not, add the attribute and its
 							// corresponding value to that element.
-							p.frameset_ok = .not_ok
+							p.frameset_ok = false
 							for mut attr in p.current_token.attributes {
 								if mut body := p.doc.body {
 									attr_name := attr.name.str()
@@ -893,34 +879,35 @@ fn (mut p Parser) in_body_insertion_mode() {
 							newline: false
 							print:   false
 						)
-						second_elem_is_body := &dom.HTMLElement(p.open_elems[1] or {
+						second_elem_is_body := (p.open_elements[1] or {
 							put(
 								typ:  .warning
 								text: '${put_prefix}: ignoring token.'
 							)
 							return
-						}).tag_name == 'body'
-						if p.open_elems.len == 1 || !second_elem_is_body || p.frameset_ok == .not_ok {
+						} as dom.HTMLElement).tag_name == 'body'
+						if p.open_elements.len == 1 || !second_elem_is_body
+							|| p.frameset_ok == false {
 							put(
 								typ:  .warning
 								text: '${put_prefix}: ignoring token.'
 							)
 						} else {
 							// 1) Remove the second element on the stack of open elements from its parent node, if it has one.
-							if p.open_elems.len >= 2 {
-								p.open_elems.delete(1)
+							if p.open_elements.len >= 2 {
+								p.open_elements.delete(1)
 							}
 							// 2) Pop all the nodes from the bottom of the stack of open elements, from the current node up to,
 							// but not including, the root html element.
-							for p.open_elems.len > 0 {
-								if &dom.HTMLElement(p.open_elems.last()).tag_name == 'html' {
+							for p.open_elements.len > 0 {
+								if (p.open_elements.last() as dom.HTMLElement).tag_name == 'html' {
 									break
 								}
-								_ := p.open_elems.pop()
+								_ := p.open_elements.pop()
 							}
 							// 3) Insert an HTML element for the token.
 							mut child := dom.HTMLElement.new(p.doc, 'frameset')
-							p.open_elems << child
+							p.open_elements << child
 							// 4) Switch the insertion mode to "in frameset".
 							p.insertion_mode = .in_frameset
 						}
@@ -937,8 +924,8 @@ fn (mut p Parser) in_body_insertion_mode() {
 						if p.has_element_in_button_scope('p') {
 							p.close_p_element()
 						}
-						if p.open_elems.len > 0 {
-							if &dom.HTMLElement(p.open_elems.last()).tag_name in [
+						if p.open_elements.len > 0 {
+							if (p.open_elements.last() as dom.HTMLElement).tag_name in [
 								'h1',
 								'h2',
 								'h3',
@@ -950,7 +937,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 									typ:  .warning
 									text: 'Unexpected start tag <${tag_name}>'
 								)
-								_ := p.open_elems.pop()
+								_ := p.open_elements.pop()
 							}
 						}
 						p.insert_html_element()
@@ -967,7 +954,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 								p.consume_token()
 							}
 						}
-						p.frameset_ok = .not_ok
+						p.frameset_ok = false
 					}
 					'form' {
 						if p.doc.form != none {
@@ -980,17 +967,17 @@ fn (mut p Parser) in_body_insertion_mode() {
 								p.close_p_element()
 							}
 							p.insert_html_element()
-							if !p.open_elems.has_by_tag_name('template') {
-								p.doc.form = &dom.HTMLFormElement(p.open_elems.last())
+							if !p.open_elements.has_by_tag_name('template') {
+								p.doc.form = &dom.HTMLFormElement(p.open_elements.last())
 							}
 						}
 					}
 					'li' {
 						// Adam: I did not understand the documentation for this at all. So this may or may not work.
-						p.frameset_ok = .not_ok
-						mut i := p.open_elems.len - 1
-						mut node := p.open_elems[i]
-						node_name := &dom.HTMLElement(node).tag_name
+						p.frameset_ok = false
+						mut i := p.open_elements.len - 1
+						mut node := p.open_elements[i]
+						node_name := (node as dom.HTMLElement).tag_name
 						done := fn [mut p] () {
 							if p.has_element_in_button_scope('p') {
 								p.close_p_element()
@@ -1003,23 +990,23 @@ fn (mut p Parser) in_body_insertion_mode() {
 							done()
 						} else {
 							i--
-							node = p.open_elems[i]
+							node = p.open_elements[i]
 							for {
 								p.generate_implied_end_tags(exclude: ['li'])
-								if &dom.HTMLElement(p.open_elems.last()).tag_name != 'li' {
+								if (p.open_elements.last() as dom.HTMLElement).tag_name != 'li' {
 									put(
 										typ:  .warning
 										text: 'Unexpected start tag <li>.'
 									)
 								}
-								for p.open_elems.len > 0 {
-									if &dom.HTMLElement(p.open_elems.last()).tag_name == 'li' {
+								for p.open_elements.len > 0 {
+									if (p.open_elements.last() as dom.HTMLElement).tag_name == 'li' {
 										break
 									}
-									_ := p.open_elems.pop()
+									_ := p.open_elements.pop()
 								}
-								i = p.open_elems.len - i - 1
-								node = p.open_elems[i]
+								i = p.open_elements.len - i - 1
+								node = p.open_elements[i]
 								break
 							}
 						}
@@ -1046,7 +1033,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 						}
 						p.reconstruct_afe()
 						p.insert_html_element()
-						p.frameset_ok = .not_ok
+						p.frameset_ok = false
 					}
 					'a' {
 						if p.afe_contains_after_last_marker('a') {
@@ -1084,9 +1071,9 @@ fn (mut p Parser) in_body_insertion_mode() {
 							// th element, a thead element, a tr element, the body element, or the html element, then this is
 							// a parse error.
 
-							// not_these_elements := !p.open_elems.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
+							// not_these_elements := !p.open_elements.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
 							not_these_elements := false
-							if p.open_elems.len > 1 && not_these_elements {
+							if p.open_elements.len > 1 && not_these_elements {
 								put(
 									typ:  .warning
 									text: 'Unexpected end tag </body>.'
@@ -1110,9 +1097,9 @@ fn (mut p Parser) in_body_insertion_mode() {
 							// th element, a thead element, a tr element, the body element, or the html element, then this is
 							// a parse error.
 
-							// not_these_elements := !p.open_elems.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
+							// not_these_elements := !p.open_elements.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
 							not_these_elements := false
-							if p.open_elems.len > 1 && not_these_elements {
+							if p.open_elements.len > 1 && not_these_elements {
 								put(
 									typ:  .warning
 									text: 'Unexpected end tag </html>.'
@@ -1125,7 +1112,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 					}
 					else {
 						// todo: this is not spec compliant. It assumes well-formed HTML.
-						_ := p.open_elems.pop()
+						_ := p.open_elements.pop()
 					}
 				}
 			}
@@ -1138,9 +1125,9 @@ fn (mut p Parser) in_body_insertion_mode() {
 				// li element, a p element, a tbody element, a td element, a tfoot element, a th element, a thead element,
 				// a tr element, the body element, or the html element, then this is a parse error.
 
-				// not_these_elements := !p.open_elems.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
+				// not_these_elements := !p.open_elements.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
 				not_these_elements := false
-				if p.open_elems.len > 1 && not_these_elements {
+				if p.open_elements.len > 1 && not_these_elements {
 					put(
 						typ:  .warning
 						text: 'Unexpected EOF token.'
@@ -1182,8 +1169,8 @@ fn (mut p Parser) text_insertion_mode() {
 				typ:  .warning
 				text: 'Unexpected EOF token.'
 			)
-			if &dom.HTMLElement(p.open_elems.last()).tag_name == 'script' {
-				mut script := &dom.HTMLScriptElement(p.open_elems.pop())
+			if (p.open_elements.last() as dom.HTMLElement).tag_name == 'script' {
+				mut script := &dom.HTMLScriptElement(p.open_elements.pop())
 				script.already_started = true
 			}
 		}
@@ -1193,9 +1180,9 @@ fn (mut p Parser) text_insertion_mode() {
 			} else { // end tag
 				if p.current_token.name() == 'script' {
 					// todo: end tag script in text insertion mode
-					_ := p.open_elems.pop()
+					_ := p.open_elements.pop()
 				} else {
-					_ := p.open_elems.pop()
+					_ := p.open_elements.pop()
 					p.insertion_mode = p.original_insertion_mode
 					p.original_insertion_mode = .@none
 				}
@@ -1217,12 +1204,12 @@ fn (mut p Parser) adoption_agency_algo() {
 	// // 2. If the current node is an HTML element whose tag name is subject, and the
 	// // current node is not in the list of active formatting elements, then pop the
 	// // current node off the stack of open elements and return.
-	// if p.open_elems.len > 0 {
-	// 	last_elem := p.open_elems.last() as dom.HTMLElement
+	// if p.open_elements.len > 0 {
+	// 	last_elem := p.open_elements.last() as dom.HTMLElement
 	// 	last_tag_name := last_elem.tag_name
 	// 	if last_tag_name == subject {
 	// 		is_in_afe := fn [mut p, last_elem] () bool {
-	// 			for mut afe in p.active_formatting_elems {
+	// 			for mut afe in p.active_formatting_elements {
 	// 				if mut afe is dom.HTMLElement {
 	// 					// Adam: I am not confident that this will work because I'm not sure how
 	// 					// sumtypes work under the hood and I am questioning myself deeply on this.
@@ -1240,13 +1227,12 @@ fn (mut p Parser) adoption_agency_algo() {
 // afe_contains_after_last_marker checks if the list of active formatting elements
 // contains a <target_tag_name> element after the last marker.
 fn (mut p Parser) afe_contains_after_last_marker(target_tag_name string) bool {
-	for i := p.active_formatting_elems.len - 1; i >= 0; i-- {
-		afe_item := p.active_formatting_elems[i]
-		if afe_item is AFEMarker {
+	for i := p.active_formatting_elements.len - 1; i >= 0; i-- {
+		afe_item := p.active_formatting_elements[i]
+		if afe_item.is_marker {
 			return false
 		}
-		tag_name := (afe_item as dom.HTMLElement).tag_name
-		if tag_name == target_tag_name {
+		if afe_item.tag_name == target_tag_name {
 			return true
 		}
 	}
@@ -1256,7 +1242,10 @@ fn (mut p Parser) afe_contains_after_last_marker(target_tag_name string) bool {
 // insert_afe
 fn (mut p Parser) insert_afe() {
 	mut tag_token := p.current_token as TagToken
-	mut afe := dom.HTMLElement.new(p.doc, tag_token.name())
+	mut afe := &ActiveFormattingElement{
+		HTMLElement: dom.HTMLElement.new(p.doc, tag_token.name())
+		token:       p.current_token as TagToken
+	}
 	afe.namespace_uri = dom.namespaces[dom.NamespaceURI.html]
 	for attribute in tag_token.attributes {
 		afe.attributes[attribute.name()] = attribute.value()
@@ -1271,25 +1260,24 @@ fn (mut p Parser) insert_afe() {
 	// identical names, namespaces, and values (the order of the attributes does not
 	// matter).
 	mut count := 0
-	for i := p.active_formatting_elems.len - 1; i >= 0; i-- {
-		mut afe_item := p.active_formatting_elems[i]
-		if afe_item is AFEMarker {
+	for i := p.active_formatting_elements.len - 1; i >= 0; i-- {
+		mut afe_item := p.active_formatting_elements[i]
+		if afe_item.is_marker {
 			break
 		}
-		mut elem := afe_item as dom.HTMLElement
 
-		is_same_elem := elem.tag_name == afe.tag_name && elem.namespace_uri or { '' } == afe.namespace_uri or {
+		is_same_elem := afe_item.tag_name == afe.tag_name && afe_item.namespace_uri or { '' } == afe.namespace_uri or {
 			''
-		} && p.has_same_attributes(elem, afe)
+		} && p.has_same_attributes(afe_item.HTMLElement, afe.HTMLElement)
 		if is_same_elem {
 			count++
 		}
 		if count == 3 {
-			p.active_formatting_elems.delete(i)
+			p.active_formatting_elements.delete(i)
 			break
 		}
 	}
-	p.active_formatting_elems << afe
+	p.active_formatting_elements << afe
 }
 
 // has_same_attributes compares two elements and returns whether or no they have the same
@@ -1327,13 +1315,13 @@ fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI) &dom.El
 	for attribute in tag_token.attributes {
 		child.attributes[attribute.name()] = attribute.value()
 	}
-	if p.open_elems.len > 0 {
-		mut last_opened_elem := p.open_elems.last()
+	if p.open_elements.len > 0 {
+		mut last_opened_elem := p.open_elements.last()
 		last_opened_elem.append_child(child)
 	} else {
 		p.doc.append_child(child)
 	}
-	p.open_elems << child
+	p.open_elements << child
 	return &dom.ElementInterface(child)
 }
 
@@ -1343,7 +1331,7 @@ fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI) &dom.El
 fn (mut p Parser) insert_comment() {
 	if mut p.current_token is CommentToken {
 		mut child := dom.CommentNode.new(p.doc, p.current_token.data())
-		mut last := p.open_elems.last()
+		mut last := p.open_elements.last()
 		last.append_child(child)
 		return
 	}
@@ -1364,7 +1352,7 @@ fn (mut p Parser) insert_text(text string) {
 	// "If the adjusted insertion location is in a Document node, then return.
 	// The DOM will not let Document nodes have Text node children, so they are
 	// dropped on the floor."
-	if p.open_elems.len == 0 {
+	if p.open_elements.len == 0 {
 		put(
 			typ:  .notice
 			text: 'Text nodes cannot be inserted in DOM root. They must go inside an open element. Ignoring token.'
@@ -1378,7 +1366,7 @@ fn (mut p Parser) insert_text(text string) {
 	// data is data and whose node document is the same as that of the element in which
 	// the adjusted insertion location finds itself, and insert the newly created node
 	// at the adjusted insertion location."
-	mut last_elem := p.open_elems.last()
+	mut last_elem := p.open_elements.last()
 	insert_text_node := fn [mut p, mut last_elem, text] () {
 		mut text_node := dom.Text.new(p.doc, text)
 		last_elem.append_child(text_node)
@@ -1408,105 +1396,71 @@ __global:
 
 // https://html.spec.whatwg.org/multipage/parsing.html#generate-implied-end-tags
 fn (mut p Parser) generate_implied_end_tags(params GenerateImpliedTagsParams) {
-	if p.open_elems.len == 0 {
+	if p.open_elements.len == 0 {
 		return
 	}
 
-	mut node := &dom.HTMLElement(p.open_elems.last())
+	mut node := p.open_elements.last() as dom.HTMLElement
 	for node.tag_name in implied_end_tag_names && node.tag_name !in params.exclude {
-		_ := p.open_elems.pop()
+		_ := p.open_elements.pop()
 	}
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#closing-elements-that-have-implied-end-tags
 fn (mut p Parser) generate_all_implied_end_tags_thorougly() {
-	if p.open_elems.len == 0 {
+	if p.open_elements.len == 0 {
 		return
 	}
 
-	mut node := &dom.HTMLElement(p.open_elems.last())
+	mut node := p.open_elements.last() as dom.HTMLElement
 	for node.tag_name in implied_end_tag_names_thorough {
-		_ := p.open_elems.pop()
+		_ := p.open_elements.pop()
 	}
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#clear-the-list-of-active-formatting-elements-up-to-the-last-marker
 fn (mut p Parser) clear_afe_to_last_marker() {
-	for p.active_formatting_elems.len > 0 {
-		if p.active_formatting_elems.pop() is AFEMarker {
+	for p.active_formatting_elements.len > 0 {
+		if p.active_formatting_elements.pop().is_marker {
 			break
 		}
 	}
 }
 
+// todo: I don't think this is right. Docs were confusing here.
 // https://html.spec.whatwg.org/multipage/parsing.html#reconstruct-the-active-formatting-elements
 fn (mut p Parser) reconstruct_afe() {
-	// 1) If there are no entries in the list of active formatting elements, then there is nothing
-	// to reconstruct; stop this algorithm.
-	if p.active_formatting_elems.len == 0 {
+	mut i := if p.active_formatting_elements.len > 0 {
+		p.active_formatting_elements.len - 1
+	} else {
 		return
 	}
-	// 2) If the last (most recently added) entry in the list of active formatting elements is a
-	// marker, or if it is an element that is in the stack of open elements, then there is nothing
-	// to reconstruct; stop this algorithm.
-	if p.active_formatting_elems.last() is AFEMarker
-		|| p.open_elems.has(p.active_formatting_elems.last()) {
+	mut entry := p.active_formatting_elements[i]
+	if entry.is_marker || p.open_elements.has(entry.HTMLElement) {
 		return
 	}
-	// 3) Let entry be the last (most recently added) element in the list of active formatting
-	// elements.
-	mut i := p.active_formatting_elems.len - 1
-	mut entry := p.active_formatting_elems[i]
-	// 4) Rewind: If there are no entries before entry in the list of active formatting elements,
-	// then jump to the step labeled create.
-	rewind:
-	if p.active_formatting_elems.len > 1 {
-		unsafe {
-			goto create
+	for i > 0 {
+		i--
+		entry = p.active_formatting_elements[i]
+		if entry.is_marker || p.open_elements.has(entry.HTMLElement) {
+			break
 		}
 	}
-	// 5) Let entry be the entry one earlier than entry in the list of active formatting elements.
-	i--
-	entry = p.active_formatting_elems[i]
-	// 6) If entry is neither a marker nor an element that is also in the stack of open elements,
-	// go to the step labeled rewind.
-	if entry !is AFEMarker && !p.open_elems.has(entry) {
-		unsafe {
-			goto rewind
-		}
-	}
-	// 7) Advance: Let entry be the element one later than entry in the list of active formatting
-	// elements.
-	advance:
-	i++
-	entry = p.active_formatting_elems[i]
-	// 8) Create: Insert an HTML element for the token for which the element entry was created,
-	// to obtain new element.
-	create:
-	mut last_opened_elem := p.open_elems.last()
-	last_opened_elem.append_child(entry as dom.HTMLElement)
-	p.open_elems << entry as dom.HTMLElement
-	// 9) Replace the entry for entry in the list with an entry for new element.
-	// We stored the entry as a dom.HTMLElement and not a token, so there is no need to replace
-	// it since the element we added to open_elems above is a reference to the same entry element.
-	// 10) If the entry for new element in the list of active formatting elements is not the last
-	// entry in the list, return to the step labeled advance.
-	if p.active_formatting_elems.len > 1 {
-		unsafe {
-			goto advance
-		}
+	for i < p.active_formatting_elements.len {
+		i++
+		p.open_elements << entry.HTMLElement
 	}
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately
 fn (mut p Parser) reset_insertion_mode_appropriately() {
 	mut last := false
-	mut node_index := p.open_elems.len - 1
-	mut node := p.open_elems[node_index]
+	mut node_index := p.open_elements.len - 1
+	mut node := p.open_elements[node_index]
 	for {
 		// V bug doesn't allow this without voidptr:
 		// https://github.com/vlang/v/issues/19441
-		if voidptr(node) == voidptr(p.open_elems.first()) {
+		if voidptr(node) == voidptr(p.open_elements.first()) {
 			last = true
 			// if the parser was created as part of the HTML fragment parsing algorithm
 			// set the node to the context element passed to that algorithm
@@ -1517,7 +1471,7 @@ fn (mut p Parser) reset_insertion_mode_appropriately() {
 				p.insertion_mode = .in_select
 				return
 			}
-			ancestor := p.open_elems.first()
+			ancestor := p.open_elements.first()
 			if ancestor is dom.HTMLTemplateElement {
 				p.insertion_mode = .in_select
 				return
@@ -1529,7 +1483,7 @@ fn (mut p Parser) reset_insertion_mode_appropriately() {
 			continue
 		}
 
-		html_node := &dom.HTMLElement(node)
+		html_node := node as dom.HTMLElement
 		// todo: this should actually test with
 		// `if html_node is dom.HTMLBodyElement` instead
 		// of comparing the local name.
@@ -1587,7 +1541,7 @@ fn (mut p Parser) reset_insertion_mode_appropriately() {
 		}
 
 		node_index--
-		node = p.open_elems[node_index]
+		node = p.open_elements[node_index]
 	}
 }
 
@@ -1595,8 +1549,8 @@ fn (mut p Parser) reset_insertion_mode_appropriately() {
 // https://html.spec.whatwg.org/multipage/parsing.html#close-a-p-element
 fn (mut p Parser) close_p_element() {
 	p.generate_implied_end_tags(exclude: ['p'])
-	if p.open_elems.len > 0 {
-		tag_name := &dom.HTMLElement(p.open_elems.last()).tag_name
+	if p.open_elements.len > 0 {
+		tag_name := (p.open_elements.last() as dom.HTMLElement).tag_name
 		if tag_name != 'p' {
 			put(
 				typ:  .warning
@@ -1612,13 +1566,13 @@ fn (mut p Parser) close_p_element() {
 	p.pop_open_elems_until('p')
 }
 
-// pop_open_elems_until continues to pop the last element from `p.open_elems`
-// until `tag_name` has been popped or the `p.open_elems` is emptied.
+// pop_open_elems_until continues to pop the last element from `p.open_elements`
+// until `tag_name` has been popped or the `p.open_elements` is emptied.
 fn (mut p Parser) pop_open_elems_until(target_tag_name string) {
 	mut popped_tag_name := ''
-	for p.open_elems.len > 0 || popped_tag_name == target_tag_name {
-		popped_elem := p.open_elems.pop()
-		popped_tag_name = &dom.HTMLElement(popped_elem).tag_name
+	for p.open_elements.len > 0 || popped_tag_name == target_tag_name {
+		popped_elem := p.open_elements.pop()
+		popped_tag_name = (popped_elem as dom.HTMLElement).tag_name
 	}
 }
 
@@ -1627,8 +1581,8 @@ fn (mut p Parser) pop_open_elems_until(target_tag_name string) {
 // elements has been reached.
 // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-scope
 fn (mut p Parser) has_element_in_scope_of(target_tag_name string, scope []string) bool {
-	for i := p.open_elems.len - 1; i >= 0; i-- {
-		open_tag_name := &dom.HTMLElement(p.open_elems[i]).tag_name
+	for i := p.open_elements.len - 1; i >= 0; i-- {
+		open_tag_name := (p.open_elements[i] as dom.HTMLElement).tag_name
 		if open_tag_name in scope || open_tag_name == target_tag_name {
 			return true
 		}
