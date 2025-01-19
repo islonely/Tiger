@@ -283,14 +283,13 @@ fn (mut p Parser) before_html_insertion_mode() {
 			p.doc.append_child(child)
 		}
 		CharacterToken {
-			if p.current_token in whitespace {
-			} else {
+			if p.current_token !in whitespace {
 				anything_else()
 			}
 		}
 		TagToken {
 			if p.current_token.is_start {
-				if p.current_token.name() == 'html' {
+				if _likely_(p.current_token.name() == 'html') {
 					p.insert_html_element()
 					p.insertion_mode = .before_head
 				} else {
@@ -471,6 +470,8 @@ fn (mut p Parser) in_head_insertion_mode() {
 		CharacterToken {
 			if p.current_token in whitespace {
 				p.insert_text(p.current_token.str())
+			} else {
+				anything_else()
 			}
 		}
 		CommentToken {
@@ -973,42 +974,31 @@ fn (mut p Parser) in_body_insertion_mode() {
 						}
 					}
 					'li' {
-						// Adam: I did not understand the documentation for this at all. So this may or may not work.
 						p.frameset_ok = false
 						mut i := p.open_elements.len - 1
-						mut node := p.open_elements[i]
-						node_name := (node as dom.HTMLElement).tag_name
-						done := fn [mut p] () {
-							if p.has_element_in_button_scope('p') {
-								p.close_p_element()
-							}
-						}
-						// "if node is in the special category, but is not an address, div or p element, then jump to done step"
-						node_in_special_category := tag_name in special_tag_names
-							&& node_name !in ['address', 'div', 'p']
-						if node_in_special_category {
-							done()
-						} else {
-							i--
-							node = p.open_elements[i]
-							for {
+						for i >= 0 {
+							mut node := &(p.open_elements[i] as dom.HTMLElement)
+							if node.tag_name == 'li' {
 								p.generate_implied_end_tags(exclude: ['li'])
-								if (p.open_elements.last() as dom.HTMLElement).tag_name != 'li' {
+								last_opened_elem := p.open_elements.last() as dom.HTMLElement
+								if last_opened_elem.tag_name != 'li' {
 									put(
 										typ:  .warning
-										text: 'Unexpected start tag <li>.'
+										text: 'Expected to be in <li>; we are not.'
 									)
 								}
-								for p.open_elements.len > 0 {
-									if (p.open_elements.last() as dom.HTMLElement).tag_name == 'li' {
-										break
-									}
-									_ := p.open_elements.pop()
-								}
-								i = p.open_elements.len - i - 1
-								node = p.open_elements[i]
+								p.pop_open_elems_until('li')
 								break
 							}
+							is_node_in_special_category := node.tag_name in special_tag_names
+								&& node.tag_name !in ['address', 'div', 'p']
+							if is_node_in_special_category {
+								break
+							}
+							i--
+						}
+						if p.has_element_in_button_scope('p') {
+							p.close_p_element()
 						}
 						p.insert_html_element()
 					}
@@ -1312,6 +1302,7 @@ fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI) &dom.El
 	mut tag_token := p.current_token as TagToken
 	mut child := dom.HTMLElement.new(p.doc, tag_token.name())
 	child.namespace_uri = dom.namespaces[namespace_uri]
+	child.node_type = .element
 	for attribute in tag_token.attributes {
 		child.attributes[attribute.name()] = attribute.value()
 	}
@@ -1322,7 +1313,7 @@ fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI) &dom.El
 		p.doc.append_child(child)
 	}
 	p.open_elements << child
-	return &dom.ElementInterface(child)
+	return child
 }
 
 // insert_comment adds a comment to the last opened element (and always assumes
