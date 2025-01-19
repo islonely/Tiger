@@ -536,7 +536,7 @@ fn (mut p Parser) in_head_insertion_mode() {
 				} else if tag_name == 'template' {
 					p.insert_html_element()
 					p.active_formatting_elements << &ActiveFormattingElement{
-						HTMLElement: p.open_elements.last() as dom.HTMLElement
+						HTMLElement: &(p.open_elements[p.open_elements.len - 1] as dom.HTMLElement)
 						is_marker:   true
 						token:       p.current_token as TagToken
 					}
@@ -826,7 +826,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 							// add the attribute and its corresponding value to that element.
 							for mut attr in p.current_token.attributes {
 								if p.open_elements.len > 0 {
-									mut last_opened_elem := p.open_elements.last() as dom.HTMLElement
+									mut last_opened_elem := &(p.open_elements[p.open_elements.len - 1] as dom.HTMLElement)
 									last_opened_elem.attributes[attr.name.str()] = attr.value.str()
 								}
 							}
@@ -1400,7 +1400,7 @@ fn (mut p Parser) generate_implied_end_tags(params GenerateImpliedTagsParams) {
 		return
 	}
 
-	mut node := p.open_elements.last() as dom.HTMLElement
+	mut node := &(p.open_elements[p.open_elements.len - 1] as dom.HTMLElement)
 	for node.tag_name in implied_end_tag_names && node.tag_name !in params.exclude {
 		_ := p.open_elements.pop()
 	}
@@ -1412,7 +1412,7 @@ fn (mut p Parser) generate_all_implied_end_tags_thorougly() {
 		return
 	}
 
-	mut node := p.open_elements.last() as dom.HTMLElement
+	mut node := &(p.open_elements[p.open_elements.len - 1] as dom.HTMLElement)
 	for node.tag_name in implied_end_tag_names_thorough {
 		_ := p.open_elements.pop()
 	}
