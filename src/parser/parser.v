@@ -1003,7 +1003,33 @@ fn (mut p Parser) in_body_insertion_mode() {
 						p.insert_html_element()
 					}
 					'dd', 'dt' {
-						// todo: dd, dt
+						p.frameset_ok = false
+						mut i := p.open_elements.len - 1
+						for i >= 0 {
+							mut node := &(p.open_elements[i] as dom.HTMLElement)
+							if node.tag_name in ['dd', 'dt'] {
+								p.generate_implied_end_tags(exclude: [node.tag_name])
+								last_opened_elem := p.open_elements.last() as dom.HTMLElement
+								if last_opened_elem.tag_name != node.tag_name {
+									put(
+										typ:  .warning
+										text: 'Expected to be in <${node.tag_name}>; we are not.'
+									)
+								}
+								p.pop_open_elems_until(node.tag_name)
+								break
+							}
+							is_node_in_special_category := node.tag_name in special_tag_names
+								&& node.tag_name !in ['address', 'div', 'p']
+							if is_node_in_special_category {
+								break
+							}
+							i--
+						}
+						if p.has_element_in_button_scope('p') {
+							p.close_p_element()
+						}
+						p.insert_html_element()
 					}
 					'plaintext' {
 						if p.has_element_in_button_scope('p') {
