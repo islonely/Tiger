@@ -43,7 +43,7 @@ mut:
 	class_name    string
 	class_list    []string
 	slot          string
-	attributes    map[string]string
+	attributes    map[string]string // todo: this should actually be `map[string]&Attribute`
 	namespace_uri ?string
 }
 

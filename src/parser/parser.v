@@ -311,6 +311,10 @@ pub fn (mut p Parser) parse() &dom.Document {
 		}
 	}
 
+	$if print_tree ? {
+		p.doc.pretty_print()
+	}
+
 	return p.doc
 }
 
@@ -1295,6 +1299,13 @@ fn (mut p Parser) in_body_insertion_mode() {
 						}
 						// acknowledge self-closing flag
 					}
+					'caption', 'col', 'colgroup', 'frame', 'head', 'tbody', 'td', 'tfoot', 'th',
+					'thead', 'tr' {
+						put(
+							typ:  .warning
+							text: 'Unexpected <${p.current_token.name()}>.'
+						)
+					}
 					else {
 						p.reconstruct_afe()
 						p.insert_html_element()
@@ -1306,57 +1317,49 @@ fn (mut p Parser) in_body_insertion_mode() {
 						p.in_head_insertion_mode()
 					}
 					'body' {
-						// !p.has_element_in_scope('body')
-						if false {
+						if !p.has_element_in_scope('body') {
 							put(
 								typ:  .warning
-								text: 'Unexpected end tag </body>: ignoring token.'
+								text: 'Unexpected end tag </body>.'
 							)
-						} else {
-							// Otherwise, if there is a node in the stack of open elements that is not either a dd element,
-							// a dt element, an li element, an optgroup element, an option element, a p element, an rb element,
-							// an rp element, an rt element, an rtc element, a tbody element, a td element, a tfoot element, a
-							// th element, a thead element, a tr element, the body element, or the html element, then this is
-							// a parse error.
-
-							// not_these_elements := !p.open_elements.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
-							not_these_elements := false
-							if p.open_elements.len > 1 && not_these_elements {
-								put(
-									typ:  .warning
-									text: 'Unexpected end tag </body>.'
-								)
-							} else {
-								p.insertion_mode = .after_body
+						}
+						for i := p.open_elements.len - 1; i >= 0; i-- {
+							if p.open_elements[i] is dom.HTMLElement {
+								open_tag_name := (p.open_elements[i] as dom.HTMLElement).tag_name
+								if open_tag_name !in ['dd', 'dt', 'li', 'optgroup', 'option', 'p',
+									'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead',
+									'tr', 'body', 'html'] {
+									put(
+										typ:  .warning
+										text: 'Unexpected end tag </body>'
+									)
+								}
 							}
 						}
+						p.insertion_mode = .after_body
 					}
 					'html' {
-						// !p.has_element_in_scope('body')
-						if false {
+						if !p.has_element_in_scope('body') {
 							put(
 								typ:  .warning
-								text: 'Unexpected end tag </html>: ignoring token.'
+								text: 'Unexpected end tag </body>.'
 							)
-						} else {
-							// Otherwise, if there is a node in the stack of open elements that is not either a dd element,
-							// a dt element, an li element, an optgroup element, an option element, a p element, an rb element,
-							// an rp element, an rt element, an rtc element, a tbody element, a td element, a tfoot element, a
-							// th element, a thead element, a tr element, the body element, or the html element, then this is
-							// a parse error.
-
-							// not_these_elements := !p.open_elements.has_by_tag_name('dd', 'dt', 'li', 'optgroup', 'option', 'p', 'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'body', 'html')
-							not_these_elements := false
-							if p.open_elements.len > 1 && not_these_elements {
-								put(
-									typ:  .warning
-									text: 'Unexpected end tag </html>.'
-								)
-							} else {
-								p.insertion_mode = .after_body
-							}
-							p.reconsume_token = true
 						}
+						for i := p.open_elements.len - 1; i >= 0; i-- {
+							if p.open_elements[i] is dom.HTMLElement {
+								open_tag_name := (p.open_elements[i] as dom.HTMLElement).tag_name
+								if open_tag_name !in ['dd', 'dt', 'li', 'optgroup', 'option', 'p',
+									'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead',
+									'tr', 'body', 'html'] {
+									put(
+										typ:  .warning
+										text: 'Unexpected end tag </body>'
+									)
+								}
+							}
+						}
+						p.insertion_mode = .after_body
+						p.reconsume_token = true
 					}
 					else {
 						// todo: this is not spec compliant. It assumes well-formed HTML.
