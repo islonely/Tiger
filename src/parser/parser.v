@@ -1217,12 +1217,12 @@ fn (mut p Parser) in_body_insertion_mode() {
 						}
 						p.reconstruct_afe()
 						p.insert_html_element()
-						p.insert_afe()
+						p.insert_last_element_into_afe()
 					}
 					'b', 'big', 'code', 'em', 'font', 'i', 's', 'small', 'strike', 'strong', 'tt',
 					'u' {
 						p.reconstruct_afe()
-						p.insert_afe()
+						p.insert_last_element_into_afe()
 					}
 					'nobr' {
 						p.reconstruct_afe()
@@ -1235,7 +1235,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 							p.reconstruct_afe()
 						}
 						p.insert_html_element()
-						p.insert_afe()
+						p.insert_last_element_into_afe()
 					}
 					'applet', 'marquee', 'object' {
 						p.reconstruct_afe()
@@ -1517,8 +1517,8 @@ fn (mut p Parser) in_body_insertion_mode() {
 								typ:  .warning
 								text: 'Unexpected </p>; there is no open <p> element in scope.'
 							)
+							p.insert_foreign_element(dom.NamespaceURI.html, false, tag_name: 'p')
 						}
-						p.insert_foreign_element(dom.NamespaceURI.html, false, tag_name: 'p')
 						p.close_p_element()
 					}
 					'li' {
@@ -1584,6 +1584,7 @@ fn (mut p Parser) in_body_insertion_mode() {
 					'a', 'b', 'big', 'code', 'em', 'font', 'i', 'nobr', 's', 'small', 'strike',
 					'strong', 'tt', 'u' {
 						p.adoption_agency_algo()
+						_ := p.open_elements.pop() // should remove this once adoption_agency_algo is implemented
 					}
 					'applet', 'marquee', 'object' {
 						if !p.has_element_in_scope(tag_name) {
@@ -1690,6 +1691,10 @@ fn (mut p Parser) text_insertion_mode() {
 }
 
 fn (mut p Parser) adoption_agency_algo() {
+	put(
+		typ:  .warning
+		text: 'adoption agency algorithm not implemented'
+	)
 }
 
 // afe_find_after_last_marker checks if the list of active formatting elements contains
@@ -1723,15 +1728,10 @@ fn (mut p Parser) afe_contains_after_last_marker(target_tag_name string) bool {
 }
 
 // insert_afe
-fn (mut p Parser) insert_afe() {
-	mut tag_token := p.current_token as TagToken
+fn (mut p Parser) insert_last_element_into_afe() {
 	mut afe := &ActiveFormattingElement{
-		HTMLElement: dom.HTMLElement.new(p.doc, tag_token.name())
+		HTMLElement: &(p.open_elements[p.open_elements.len - 1] as dom.HTMLElement)
 		token:       p.current_token as TagToken
-	}
-	afe.namespace_uri = dom.namespaces[dom.NamespaceURI.html]
-	for attribute in tag_token.attributes {
-		afe.attributes[attribute.name()] = attribute.value()
 	}
 	// 1.If there are already three elements in the list of active formatting elements
 	// after the last marker, if any, or anywhere in the list if there are no markers,
@@ -1901,9 +1901,9 @@ fn (mut p Parser) generate_implied_end_tags(params GenerateImpliedTagsParams) {
 		return
 	}
 
-	mut node := &(p.open_elements[p.open_elements.len - 1] as dom.HTMLElement)
+	mut node := (p.open_elements[p.open_elements.len - 1] as dom.HTMLElement)
 	for node.tag_name in implied_end_tag_names && node.tag_name !in params.exclude {
-		_ := p.open_elements.pop()
+		node = p.open_elements.pop() as dom.HTMLElement
 	}
 }
 
@@ -1928,7 +1928,7 @@ fn (mut p Parser) clear_afe_to_last_marker() {
 	}
 }
 
-// todo: I don't think this is right. Docs were confusing here.
+// todo: This is definitely no doing what it is supposed to
 // https://html.spec.whatwg.org/multipage/parsing.html#reconstruct-the-active-formatting-elements
 fn (mut p Parser) reconstruct_afe() {
 	mut i := if p.active_formatting_elements.len > 0 {
@@ -1949,7 +1949,7 @@ fn (mut p Parser) reconstruct_afe() {
 	}
 	for i < p.active_formatting_elements.len {
 		i++
-		p.open_elements << entry.HTMLElement
+		// p.open_elements << entry.HTMLElement
 	}
 }
 
@@ -2055,16 +2055,16 @@ fn (mut p Parser) close_p_element() {
 		if tag_name != 'p' {
 			put(
 				typ:  .warning
-				text: 'expected <p> element; got <${tag_name}>'
+				text: 'Expected current_node to be <p>; got opened <${tag_name}>.'
 			)
 		}
+		p.pop_open_elems_until('p')
 	} else {
 		put(
 			typ:  .warning
-			text: 'expected <p> element; got nothing.'
+			text: 'No opened <p> elements.'
 		)
 	}
-	p.pop_open_elems_until('p')
 }
 
 // pop_open_elems_until continues to pop the last element from `p.open_elements`
