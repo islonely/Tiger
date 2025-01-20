@@ -21,6 +21,7 @@ pub fn (mut app App) open_url(url string) {
 	mut doc := p.parse()
 	mut tab := Tab.new(mut doc)
 	app.tabbox.add_child(url, tab.view)
+	app.tabbox.active_tab = url
 }
 
 // App.new creates a new instance of the App.

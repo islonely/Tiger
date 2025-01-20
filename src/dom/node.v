@@ -1,6 +1,7 @@
 module dom
 
 import strings
+import term
 
 // https://infra.spec.whatwg.org/#html-namespace
 const namespace = {
@@ -125,9 +126,12 @@ fn (n NodeInterface) recur_pretty_str(depth int) string {
 	for child in n.child_nodes {
 		name := if child is ElementInterface {
 			mut name_builder := strings.new_builder(200)
-			name_builder.write_string(':${child.tag_name}')
+			elem_name := term_red(child.tag_name)
+			name_builder.write_string(':${elem_name}')
 			for attr_name, attr_val in child.attributes {
-				name_builder.write_string('&${attr_name}="${attr_val}"')
+				name := term_green(attr_name)
+				val := term_orange('"${attr_val}"')
+				name_builder.write_string('&${name}=${val}')
 			}
 			name_builder.str()
 		} else if child is CommentNode {
@@ -135,17 +139,19 @@ fn (n NodeInterface) recur_pretty_str(depth int) string {
 		} else if child is DocumentType {
 			':${child.name}'
 		} else if child is Text {
-			text := if child.is_whitespace() {
+			plaintext := if child.is_whitespace() {
 				'<whitespace>'
 			} else {
-				child.data.replace('\n', '\\n').replace('\t', '\\t')
+				child.data.replace('\n', ' ').replace('\t', ' ').replace('  ', '')
 			}
-			':"${text}"'
+			text := term_gray('"${plaintext}"')
+			':${text}'
 		} else {
 			':<no_name>'
 		}
 		prefix := '  '.repeat(depth)
-		bldr.write_string('${prefix}|__${child.node_type}${name}\n')
+		clr_fn := term_colors[depth % term_colors.len]
+		bldr.write_string('${prefix}${clr_fn('|__')}${term.bright_blue(child.node_type.str())}${name}\n')
 		bldr.write_string(child.recur_pretty_str(depth + 1))
 	}
 	return bldr.str()
