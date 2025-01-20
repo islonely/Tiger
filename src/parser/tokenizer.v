@@ -1454,6 +1454,9 @@ fn (mut t Tokenizer) after_attribute_name_state() []Token {
 	}
 
 	if t.char == `>` {
+		if (t.token as TagToken).is_start {
+			t.open_tags.push((t.token as TagToken).name())
+		}
 		t.state = .data
 		return [t.token]
 	}
@@ -1491,6 +1494,9 @@ fn (mut t Tokenizer) before_attribute_value_state() []Token {
 
 	if t.char == `>` {
 		println(ParseError.missing_attribute_value)
+		if (t.token as TagToken).is_start {
+			t.open_tags.push((t.token as TagToken).name())
+		}
 		t.state = .data
 		return [t.token]
 	}
@@ -1592,6 +1598,9 @@ fn (mut t Tokenizer) attribute_value_unquoted_state() []Token {
 	}
 
 	if t.char == `>` {
+		if (t.token as TagToken).is_start {
+			t.open_tags.push((t.token as TagToken).name())
+		}
 		t.state = .data
 		return [t.token]
 	}
@@ -1631,6 +1640,9 @@ fn (mut t Tokenizer) after_attribute_value_quoted_state() []Token {
 	}
 
 	if t.char == `>` {
+		if (t.token as TagToken).is_start {
+			t.open_tags.push((t.token as TagToken).name())
+		}
 		t.state = .data
 		return [t.token]
 	}

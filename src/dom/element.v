@@ -83,6 +83,9 @@ pub fn (mut element ElementInterface) to_html(depth int) string {
 			if mut child_node is ElementInterface {
 				builder.write_string(child_node.to_html(depth + 1))
 			} else if mut child_node is Text {
+				if child_node.is_whitespace() {
+					continue
+				}
 				builder.write_string('\t'.repeat(depth + 1) + child_node.data + '\n')
 			} else if mut child_node is CommentNode {
 				n := *child_node

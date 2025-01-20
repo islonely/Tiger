@@ -135,7 +135,12 @@ fn (n NodeInterface) recur_pretty_str(depth int) string {
 		} else if child is DocumentType {
 			':${child.name}'
 		} else if child is Text {
-			':"${child.data}"'
+			text := if child.is_whitespace() {
+				'<whitespace>'
+			} else {
+				child.data.replace('\n', '\\n').replace('\t', '\\t')
+			}
+			':"${text}"'
 		} else {
 			':<no_name>'
 		}

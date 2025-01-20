@@ -279,9 +279,9 @@ pub fn (mut p Parser) parse() &dom.Document {
 	for p.tokenizer.state != .eof {
 		match p.insertion_mode {
 			.@none { return p.doc }
-			.after_after_body {}
+			.after_after_body { p.after_after_body_insertion_mode() }
 			.after_after_frameset {}
-			.after_body { p.in_body_insertion_mode() }
+			.after_body { p.after_body_insertion_mode() }
 			.after_frameset {}
 			.after_head { p.after_head_insertion_mode() }
 			.before_head { p.before_head_insertion_mode() }
@@ -325,7 +325,99 @@ fn (mut p Parser) consume_token() {
 	p.last_token, p.current_token, p.next_token = p.current_token, p.next_token, p.tokenizer.emit_token()
 }
 
-// before_html_insertion mode is the mode the parser is in when
+// after_after_body_insertion_mode is the mode the parser is in after the
+// parser has handled an end body tag (</body>).
+// https://html.spec.whatwg.org/multipage/parsing.html#the-after-after-body-insertion-mode
+fn (mut p Parser) after_after_body_insertion_mode() {
+	anything_else := fn [mut p] () {
+		put(
+			typ:  .warning
+			text: 'Unexpected token: ${p.current_token}'
+		)
+		p.insertion_mode = .in_body
+	}
+
+	match mut p.current_token {
+		CommentToken {
+			p.insert_comment()
+		}
+		DoctypeToken {
+			p.in_body_insertion_mode()
+		}
+		CharacterToken {
+			if p.current_token in whitespace {
+				p.in_body_insertion_mode()
+				return
+			}
+			anything_else()
+		}
+		TagToken {
+			if p.current_token.name() == 'html' && p.current_token.is_start {
+				p.in_body_insertion_mode()
+				return
+			}
+
+			anything_else()
+		}
+		EOFToken {
+			p.insertion_mode = .@none
+		}
+	}
+}
+
+// after_body_insertion_mode is the mode the parser is in after the parser
+// has encountered an end body tag (</body>).
+// https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-afterbody
+fn (mut p Parser) after_body_insertion_mode() {
+	anything_else := fn [mut p] () {
+		put(
+			typ:  .warning
+			text: 'Unexpected token: ${p.current_token}'
+		)
+		p.insertion_mode = .in_body
+		p.reconsume_token = true
+	}
+
+	match mut p.current_token {
+		CharacterToken {
+			if p.current_token in whitespace {
+				p.in_body_insertion_mode()
+				return
+			}
+			anything_else()
+		}
+		DoctypeToken {
+			put(
+				typ:  .warning
+				text: 'Ignoring token: ${p.current_token}'
+			)
+		}
+		TagToken {
+			tag_name := p.current_token.name()
+			if tag_name == 'html' {
+				if p.current_token.is_start {
+					p.in_body_insertion_mode()
+					return
+				}
+
+				// if the parser was created as part of the HTML fragment
+				// parsing algorithm, this is a parse error; ignore the token.
+				// otherwise:
+				p.insertion_mode = .after_after_body
+				return
+			}
+			anything_else()
+		}
+		EOFToken {
+			p.insertion_mode = .@none
+		}
+		else {
+			anything_else()
+		}
+	}
+}
+
+// before_html_insertion_mode is the mode the parser is in when
 // `Parser.next_token` is an open tag HTML tag (<html>).
 // https://html.spec.whatwg.org/multipage/parsing.html#the-before-html-insertion-mode
 fn (mut p Parser) before_html_insertion_mode() {
@@ -1323,19 +1415,19 @@ fn (mut p Parser) in_body_insertion_mode() {
 								text: 'Unexpected end tag </body>.'
 							)
 						}
-						for i := p.open_elements.len - 1; i >= 0; i-- {
-							if p.open_elements[i] is dom.HTMLElement {
-								open_tag_name := (p.open_elements[i] as dom.HTMLElement).tag_name
-								if open_tag_name !in ['dd', 'dt', 'li', 'optgroup', 'option', 'p',
-									'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead',
-									'tr', 'body', 'html'] {
-									put(
-										typ:  .warning
-										text: 'Unexpected end tag </body>'
-									)
-								}
-							}
-						}
+						// for i := p.open_elements.len - 1; i >= 0; i-- {
+						// 	if p.open_elements[i] is dom.HTMLElement {
+						// 		open_tag_name := (p.open_elements[i] as dom.HTMLElement).tag_name
+						// 		if open_tag_name !in ['dd', 'dt', 'li', 'optgroup', 'option', 'p',
+						// 			'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead',
+						// 			'tr', 'body', 'html'] {
+						// 			put(
+						// 				typ:  .warning
+						// 				text: 'Unexpected end tag </body>'
+						// 			)
+						// 		}
+						// 	}
+						// }
 						p.insertion_mode = .after_body
 					}
 					'html' {
@@ -1345,19 +1437,20 @@ fn (mut p Parser) in_body_insertion_mode() {
 								text: 'Unexpected end tag </body>.'
 							)
 						}
-						for i := p.open_elements.len - 1; i >= 0; i-- {
-							if p.open_elements[i] is dom.HTMLElement {
-								open_tag_name := (p.open_elements[i] as dom.HTMLElement).tag_name
-								if open_tag_name !in ['dd', 'dt', 'li', 'optgroup', 'option', 'p',
-									'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead',
-									'tr', 'body', 'html'] {
-									put(
-										typ:  .warning
-										text: 'Unexpected end tag </body>'
-									)
-								}
-							}
-						}
+						// for i := p.open_elements.len - 1; i >= 0; i-- {
+						// 	if p.open_elements[i] is dom.HTMLElement {
+						// 		open_tag_name := (p.open_elements[i] as dom.HTMLElement).tag_name
+						// 		if open_tag_name !in ['dd', 'dt', 'li', 'optgroup', 'option', 'p',
+						// 			'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead',
+						// 			'tr', 'body', 'html'] {
+						// 			println(i)
+						// 			put(
+						// 				typ:  .warning
+						// 				text: 'Unexpected end tag </body>'
+						// 			)
+						// 		}
+						// 	}
+						// }
 						p.insertion_mode = .after_body
 						p.reconsume_token = true
 					}
