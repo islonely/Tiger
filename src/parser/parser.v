@@ -99,6 +99,67 @@ const button_scope = ['button']
 const table_scope = ['html', 'table', 'template']
 const select_scope = ['optgroup', 'option']
 
+const adjusted_svg_attrs = {
+	'attributename':       'attributeName'
+	'attributetype':       'attributeType'
+	'basefrequency':       'baseFrequency'
+	'baseprofile':         'baseProfile'
+	'calcmode':            'calcMode'
+	'clippathunits':       'clipPathUnits'
+	'diffuseconstant':     'diffuseConstant'
+	'edgemode':            'edgeMode'
+	'filterunits':         'filterUnits'
+	'glyphref':            'glyphRef'
+	'gradienttransform':   'gradientTransform'
+	'gradientunits':       'gradientUnits'
+	'kernelmatrix':        'kernelMatrix'
+	'kernelunitlength':    'kernelUnitLength'
+	'keypoints':           'keyPoints'
+	'keysplines':          'keySplines'
+	'keytimes':            'keyTimes'
+	'lengthadjust':        'lengthAdjust'
+	'limitingconeangle':   'limitingConeAngle'
+	'markerheight':        'markerHeight'
+	'markerunits':         'markerUnits'
+	'markerwidth':         'markerWidth'
+	'maskcontentunits':    'maskContentUnits'
+	'maskunits':           'maskUnits'
+	'numoctaves':          'numOctaves'
+	'pathlength':          'pathLength'
+	'patterncontentunits': 'patternContentUnits'
+	'patterntransform':    'patternTransform'
+	'patternunits':        'patternUnits'
+	'pointsatx':           'pointsAtX'
+	'pointsaty':           'pointsAtY'
+	'pointsatz':           'pointsAtZ'
+	'preservealpha':       'preserveAlpha'
+	'preserveaspectratio': 'preserveAspectRatio'
+	'primitiveunits':      'primitiveUnits'
+	'refx':                'refX'
+	'refy':                'refY'
+	'repeatcount':         'repeatCount'
+	'repeatdur':           'repeatDur'
+	'requiredextensions':  'requiredExtensions'
+	'requiredfeatures':    'requiredFeatures'
+	'specularconstant':    'specularConstant'
+	'specularexponent':    'specularExponent'
+	'spreadmethod':        'spreadMethod'
+	'startoffset':         'startOffset'
+	'stddeviation':        'stdDeviation'
+	'stitchtiles':         'stitchTiles'
+	'surfacescale':        'surfaceScale'
+	'systemlanguage':      'systemLanguage'
+	'tablevalues':         'tableValues'
+	'targetx':             'targetX'
+	'targety':             'targetY'
+	'textlength':          'textLength'
+	'viewport':            'viewBox'
+	'viewtarget':          'viewTarget'
+	'xchannelselector':    'xChannelSelector'
+	'ychannelselector':    'yChannelSelector'
+	'zoomandpan':          'zoomAndPan'
+}
+
 // InsertionMode is the mode the parser will parse the token in.
 enum InsertionMode {
 	@none
@@ -170,8 +231,7 @@ mut:
 	tokenizer                      Tokenizer
 	insertion_mode                 InsertionMode = .initial
 	original_insertion_mode        InsertionMode = .@none
-	scripting_enabled              bool
-	frameset_ok                    bool = true
+	frameset_ok                    bool          = true
 	template_insertion_modes       []InsertionMode
 	open_elements                  OpenElements
 	active_formatting_elements     []&ActiveFormattingElement
@@ -1155,6 +1215,86 @@ fn (mut p Parser) in_body_insertion_mode() {
 						p.frameset_ok = false
 						p.insertion_mode = .text
 					}
+					'xmp' {
+						if p.has_element_in_button_scope('p') {
+							p.close_p_element()
+						}
+						p.reconstruct_afe()
+						p.frameset_ok = false
+						p.generic_raw_text_element_algo(.rawtext)
+					}
+					'iframe' {
+						p.frameset_ok = false
+						p.generic_raw_text_element_algo(.rawtext)
+					}
+					'noembed' {
+						p.generic_raw_text_element_algo(.rawtext)
+					}
+					'noscript' {
+						if p.doc.scripting {
+							p.generic_raw_text_element_algo(.rawtext)
+						}
+					}
+					'select' {
+						p.reconstruct_afe()
+						p.insert_html_element()
+						p.frameset_ok = false
+						p.insertion_mode = .in_select
+					}
+					'optgroup', 'option' {
+						if (p.open_elements.last() as dom.HTMLElement).tag_name == 'option' {
+							_ := p.open_elements.pop()
+						}
+						p.reconstruct_afe()
+						p.insert_html_element()
+					}
+					'rb', 'rtc' {
+						if p.has_element_in_scope('ruby') {
+							p.generate_implied_end_tags()
+							if (p.open_elements.last() as dom.HTMLElement).tag_name == 'ruby' {
+								put(
+									typ:  .warning
+									text: 'Unexpected <ruby> element.'
+								)
+							}
+						}
+						p.insert_html_element()
+					}
+					'rp', 'rt' {
+						if p.has_element_in_scope('ruby') {
+							p.generate_implied_end_tags(exclude: ['rtc'])
+							last_tag_name := (p.open_elements.last() as dom.HTMLElement).tag_name
+							if last_tag_name in ['ruby', 'rtc'] {
+								put(
+									typ:  .warning
+									text: 'Unexpected <${last_tag_name}> element.'
+								)
+							}
+						}
+						p.insert_html_element()
+					}
+					'math' {
+						p.reconstruct_afe()
+						p.adjust_mathml_attrs()
+						p.insert_foreign_element(dom.NamespaceURI.mathml, false,
+							adjust_foreign_attrs: true
+						)
+						if p.current_token.self_closing {
+							_ := p.open_elements.pop()
+						}
+						// acknowledge self-closing flag
+					}
+					'svg' {
+						p.reconstruct_afe()
+						p.adjust_svg_attrs()
+						p.insert_foreign_element(dom.NamespaceURI.svg, false,
+							adjust_foreign_attrs: true
+						)
+						if p.current_token.self_closing {
+							_ := p.open_elements.pop()
+						}
+						// acknowledge self-closing flag
+					}
 					else {
 						p.reconstruct_afe()
 						p.insert_html_element()
@@ -1412,17 +1552,31 @@ fn (mut p Parser) has_same_attributes(elem1 dom.HTMLElement, elem2 dom.HTMLEleme
 // https://html.spec.whatwg.org/multipage/parsing.html#insert-an-html-element
 @[inline]
 fn (mut p Parser) insert_html_element() &dom.ElementInterface {
-	return p.insert_foreign_element(dom.NamespaceURI.html)
+	return p.insert_foreign_element(dom.NamespaceURI.html, false)
+}
+
+@[params]
+struct InsertElemParams {
+mut:
+	adjust_foreign_attrs bool
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#insert-a-foreign-element
-fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI) &dom.ElementInterface {
+fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI, only_add_to_elem_stack bool, params InsertElemParams) &dom.ElementInterface {
 	mut tag_token := p.current_token as TagToken
 	mut child := dom.HTMLElement.new(p.doc, tag_token.name())
 	child.namespace_uri = dom.namespaces[namespace_uri]
 	child.node_type = .element
-	for attribute in tag_token.attributes {
-		child.attributes[attribute.name()] = attribute.value()
+	if params.adjust_foreign_attrs {
+		// for attribute in tag_token.attributes {
+		// 	if attribute.name() in dom.foreign_attrs {
+		// 		child.attributes < dom.Attribute.adjusted_foreign(attribute.name(), attribute.val())
+		// 	}
+		// }
+	} else {
+		for attribute in tag_token.attributes {
+			child.attributes[attribute.name()] = attribute.value()
+		}
 	}
 	if p.open_elements.len > 0 {
 		mut last_opened_elem := p.open_elements.last()
@@ -1737,4 +1891,36 @@ fn (mut p Parser) has_element_in_table_scope(target_tag_name string) bool {
 @[inline]
 fn (mut p Parser) has_element_in_select_scope(target_tag_name string) bool {
 	return p.has_element_in_scope_of(target_tag_name, select_scope)
+}
+
+// generic_raw_text_element_algo
+fn (mut p Parser) generic_raw_text_element_algo(state TokenizerState) {
+	_ := p.insert_html_element()
+	p.tokenizer.state = state
+	p.original_insertion_mode = p.insertion_mode
+	p.insertion_mode = .text
+}
+
+// adjust_mathml_attrs changes the case of attribute names to the correct value
+// if wrong.
+fn (mut p Parser) adjust_mathml_attrs() {
+	mut tag_token := p.current_token as TagToken
+	for i, attr in tag_token.attributes {
+		if attr.name() == 'definitionurl' {
+			tag_token.attributes[i].name = 'definitionURL'.bytes()
+		}
+	}
+	p.current_token = tag_token
+}
+
+// adjust_svg_attrs changes the case of attribute names to the correct value
+// if wrong.
+fn (mut p Parser) adjust_svg_attrs() {
+	mut tag_token := p.current_token as TagToken
+	for i, attr in tag_token.attributes {
+		if attr.name() in adjusted_svg_attrs {
+			tag_token.attributes[i].name = adjusted_svg_attrs[attr.name()].bytes()
+		}
+	}
+	p.current_token = tag_token
 }
