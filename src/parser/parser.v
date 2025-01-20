@@ -1581,6 +1581,30 @@ fn (mut p Parser) in_body_insertion_mode() {
 					'sarcasm' {
 						println('Take a deep breath and relax for a moment. Look away from your screen for at least 30 seconds before returning.')
 					}
+					'a', 'b', 'big', 'code', 'em', 'font', 'i', 'nobr', 's', 'small', 'strike',
+					'strong', 'tt', 'u' {
+						p.adoption_agency_algo()
+					}
+					'applet', 'marquee', 'object' {
+						if !p.has_element_in_scope(tag_name) {
+							put(
+								typ:  .warning
+								text: 'Unexpected </${tag_name}>; there is no open <${tag_name}> element in scope.'
+							)
+							return
+						}
+
+						p.generate_implied_end_tags()
+						last_opened_tag_name := (p.open_elements[p.open_elements.len - 1] as dom.HTMLElement).tag_name
+						if last_opened_tag_name != tag_name {
+							put(
+								typ:  .warning
+								text: 'Unexpected </${tag_name}>; expecting </${last_opened_tag_name}>'
+							)
+						}
+						p.pop_open_elems_until(tag_name)
+						p.clear_afe_to_last_marker()
+					}
 					else {
 						// todo: this is not spec compliant. It assumes well-formed HTML.
 						_ := p.open_elements.pop()
@@ -1666,33 +1690,21 @@ fn (mut p Parser) text_insertion_mode() {
 }
 
 fn (mut p Parser) adoption_agency_algo() {
-	put(
-		typ:  .warning
-		text: 'adoption agency algorithm not implemented'
-	)
-	// // 1. Let subject be token's tag name
-	// subject := (p.current_token as TagToken).name()
-	// // 2. If the current node is an HTML element whose tag name is subject, and the
-	// // current node is not in the list of active formatting elements, then pop the
-	// // current node off the stack of open elements and return.
-	// if p.open_elements.len > 0 {
-	// 	last_elem := p.open_elements.last() as dom.HTMLElement
-	// 	last_tag_name := last_elem.tag_name
-	// 	if last_tag_name == subject {
-	// 		is_in_afe := fn [mut p, last_elem] () bool {
-	// 			for mut afe in p.active_formatting_elements {
-	// 				if mut afe is dom.HTMLElement {
-	// 					// Adam: I am not confident that this will work because I'm not sure how
-	// 					// sumtypes work under the hood and I am questioning myself deeply on this.
-	// 					if voidptr(&afe) == voidptr(&last_elem) {
-	// 						return true
-	// 					}
-	// 				}
-	// 			}
-	// 			return false
-	// 		}()
-	// 	}
-	// }
+}
+
+// afe_find_after_last_marker checks if the list of active formatting elements contains
+// a tag that matches the provided name and returns it if it matches.
+fn (mut p Parser) afe_find_after_last_marker(target_tag_name string) ?&ActiveFormattingElement {
+	for i := p.active_formatting_elements.len - 1; i >= 0; i-- {
+		afe_item := p.active_formatting_elements[i]
+		if afe_item.is_marker {
+			return none
+		}
+		if afe_item.tag_name == target_tag_name {
+			return afe_item
+		}
+	}
+	return none
 }
 
 // afe_contains_after_last_marker checks if the list of active formatting elements
