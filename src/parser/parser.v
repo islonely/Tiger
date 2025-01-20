@@ -1063,6 +1063,98 @@ fn (mut p Parser) in_body_insertion_mode() {
 						p.insert_html_element()
 						p.insert_afe()
 					}
+					'b', 'big', 'code', 'em', 'font', 'i', 's', 'small', 'strike', 'strong', 'tt',
+					'u' {
+						p.reconstruct_afe()
+						p.insert_afe()
+					}
+					'nobr' {
+						p.reconstruct_afe()
+						if p.has_element_in_scope('nobr') {
+							put(
+								typ:  .warning
+								text: 'Invalid <nobr>; already inside <nobr> element.'
+							)
+							p.adoption_agency_algo()
+							p.reconstruct_afe()
+						}
+						p.insert_html_element()
+						p.insert_afe()
+					}
+					'applet', 'marquee', 'object' {
+						p.reconstruct_afe()
+						p.insert_html_element()
+						p.active_formatting_elements << &ActiveFormattingElement{
+							HTMLElement: &(p.open_elements[p.open_elements.len - 1] as dom.HTMLElement)
+							is_marker:   true
+							token:       p.current_token as TagToken
+						}
+						p.frameset_ok = false
+					}
+					'table' {
+						if p.doc.mode == .quirks && p.has_element_in_button_scope('p') {
+							p.close_p_element()
+						}
+						p.insert_html_element()
+						p.frameset_ok = false
+						p.insertion_mode = .in_table
+					}
+					'area', 'br', 'embed', 'img', 'keygen', 'wbr' {
+						p.reconstruct_afe()
+						p.insert_html_element()
+						_ := p.open_elements.pop()
+						// acknowledge self-closing flag
+						p.frameset_ok = false
+					}
+					'input' {
+						input_elem := p.insert_html_element()
+						_ := p.open_elements.pop()
+						// acknowledge self-closing flag
+						if 'type' !in input_elem.attributes {
+							p.frameset_ok = false
+						} else if input_elem.attributes['type'].to_lower() != 'hidden' {
+							p.frameset_ok = false
+						}
+					}
+					'param', 'source', 'track' {
+						p.insert_html_element()
+						_ := p.open_elements.pop()
+						// acknowledge self-closing flag
+					}
+					'hr' {
+						if p.has_element_in_button_scope('p') {
+							p.close_p_element()
+						}
+						p.insert_html_element()
+						_ := p.open_elements.pop()
+						// acknowledge self-closing flag
+						p.frameset_ok = false
+					}
+					'image' {
+						put(
+							typ:  .warning
+							text: 'Invalid element <image>; use <img> instead.'
+						)
+						p.current_token.name = 'img'.bytes()
+						p.reconsume_token = true
+					}
+					'textarea' {
+						p.insert_html_element()
+						// consume and ignore line feeds
+						for {
+							if mut p.next_token is CharacterToken {
+								if p.next_token == rune(0x000A) {
+									p.consume_token()
+									continue
+								}
+							}
+							break
+						}
+						p.tokenizer.state = .rcdata
+						p.original_insertion_mode = p.insertion_mode
+						p.frameset_ok = false
+						p.insertion_mode = .text
+					}
 					else {
 						p.reconstruct_afe()
 						p.insert_html_element()
