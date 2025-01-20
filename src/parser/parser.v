@@ -1415,19 +1415,19 @@ fn (mut p Parser) in_body_insertion_mode() {
 								text: 'Unexpected end tag </body>.'
 							)
 						}
-						// for i := p.open_elements.len - 1; i >= 0; i-- {
-						// 	if p.open_elements[i] is dom.HTMLElement {
-						// 		open_tag_name := (p.open_elements[i] as dom.HTMLElement).tag_name
-						// 		if open_tag_name !in ['dd', 'dt', 'li', 'optgroup', 'option', 'p',
-						// 			'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead',
-						// 			'tr', 'body', 'html'] {
-						// 			put(
-						// 				typ:  .warning
-						// 				text: 'Unexpected end tag </body>'
-						// 			)
-						// 		}
-						// 	}
-						// }
+						for mut open_elem in p.open_elements {
+							if mut open_elem is dom.HTMLElement {
+								open_tag_name := open_elem.tag_name
+								if open_tag_name !in ['dd', 'dt', 'li', 'optgroup', 'option', 'p',
+									'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead',
+									'tr', 'body', 'html'] {
+									put(
+										typ:  .warning
+										text: '<${open_tag_name}> has no end tag; expected </${open_tag_name}>'
+									)
+								}
+							}
+						}
 						p.insertion_mode = .after_body
 					}
 					'html' {
@@ -1437,22 +1437,149 @@ fn (mut p Parser) in_body_insertion_mode() {
 								text: 'Unexpected end tag </body>.'
 							)
 						}
-						// for i := p.open_elements.len - 1; i >= 0; i-- {
-						// 	if p.open_elements[i] is dom.HTMLElement {
-						// 		open_tag_name := (p.open_elements[i] as dom.HTMLElement).tag_name
-						// 		if open_tag_name !in ['dd', 'dt', 'li', 'optgroup', 'option', 'p',
-						// 			'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead',
-						// 			'tr', 'body', 'html'] {
-						// 			println(i)
-						// 			put(
-						// 				typ:  .warning
-						// 				text: 'Unexpected end tag </body>'
-						// 			)
-						// 		}
-						// 	}
-						// }
+						for mut open_elem in p.open_elements {
+							if mut open_elem is dom.HTMLElement {
+								open_tag_name := open_elem.tag_name
+								if open_tag_name !in ['dd', 'dt', 'li', 'optgroup', 'option', 'p',
+									'rb', 'rp', 'rt', 'rtc', 'tbody', 'td', 'tfoot', 'th', 'thead',
+									'tr', 'body', 'html'] {
+									put(
+										typ:  .warning
+										text: '<${open_tag_name}> has no end tag; expected </${open_tag_name}>'
+									)
+								}
+							}
+						}
 						p.insertion_mode = .after_body
 						p.reconsume_token = true
+					}
+					'address', 'article', 'aside', 'blockquote', 'button', 'center', 'details',
+					'dialog', 'dir', 'div', 'dl', 'fieldset', 'figcaption', 'figure', 'footer',
+					'header', 'hgroup', 'listing', 'main', 'menu', 'nav', 'ol', 'pre', 'search',
+					'section', 'summary', 'ul' {
+						if !p.has_element_in_scope(tag_name) {
+							put(
+								typ:  .warning
+								text: 'Unexpected </${tag_name}>; there is open <${tag_name}> elements.'
+							)
+							return
+						}
+
+						p.generate_implied_end_tags()
+						last_opened_tag_name := (p.open_elements[p.open_elements.len - 1] as dom.HTMLElement).tag_name
+						if last_opened_tag_name != tag_name {
+							put(
+								typ:  .warning
+								text: 'Unexpected </${tag_name}>; expecting </${last_opened_tag_name}>.'
+							)
+						}
+						p.pop_open_elems_until(tag_name)
+					}
+					'form' {
+						if !p.has_element_in_scope('form') {
+							put(
+								typ:  .warning
+								text: 'Unexpected </form>; there is no open <form> element.'
+							)
+							return
+						}
+						p.generate_implied_end_tags()
+						last_opened_tag_name := (p.open_elements[p.open_elements.len - 1] as dom.HTMLElement).tag_name
+						if last_opened_tag_name != 'form' {
+							put(
+								typ:  .warning
+								text: 'Unexpected </form>; expecting </${last_opened_tag_name}>.'
+							)
+						}
+						if p.has_open_element('template') {
+							p.pop_open_elems_until('form')
+							return
+						}
+
+						if p.doc.form == none {
+							put(
+								typ:  .warning
+								text: 'Unexpected </form>; there is no open <form> element.'
+							)
+							return
+						}
+						form := p.open_elements.pop()
+						if form !is dom.HTMLFormElement {
+							put(
+								typ:  .warning
+								text: 'Expected to pop <form> element; got this instead: ${form}'
+							)
+						}
+					}
+					'p' {
+						if !p.has_element_in_button_scope('p') {
+							put(
+								typ:  .warning
+								text: 'Unexpected </p>; there is no open <p> element in scope.'
+							)
+						}
+						p.insert_foreign_element(dom.NamespaceURI.html, false, tag_name: 'p')
+						p.close_p_element()
+					}
+					'li' {
+						if !p.has_element_in_list_scope('li') {
+							put(
+								typ:  .warning
+								text: 'Unexpected </li>; there is no open <li> element in scope.'
+							)
+							return
+						}
+
+						p.generate_implied_end_tags(exclude: ['li'])
+						last_opened_tag_name := (p.open_elements[p.open_elements.len - 1] as dom.HTMLElement).tag_name
+						if last_opened_tag_name != tag_name {
+							put(
+								typ:  .warning
+								text: 'Unexpected </li>; expecting </${last_opened_tag_name}>.'
+							)
+						}
+						p.pop_open_elems_until('li')
+					}
+					'dd', 'dt' {
+						if !p.has_element_in_scope(tag_name) {
+							put(
+								typ:  .warning
+								text: 'Unexpected </${tag_name}>; there is no open <${tag_name}> element in scope.'
+							)
+							return
+						}
+						p.generate_implied_end_tags(exclude: [tag_name])
+						last_opened_tag_name := (p.open_elements[p.open_elements.len - 1] as dom.HTMLElement).tag_name
+						if last_opened_tag_name != tag_name {
+							put(
+								typ:  .warning
+								text: 'Unexpected </${tag_name}>; expecting </${last_opened_tag_name}>'
+							)
+						}
+						p.pop_open_elems_until(tag_name)
+					}
+					'h1', 'h2', 'h3', 'h4', 'h5', 'h6' {
+						if !p.has_element_in_scope(tag_name) {
+							put(
+								typ:  .warning
+								text: 'Unexpected </${tag_name}>; there is no open <${tag_name}> element in scope.'
+							)
+							return
+						}
+						p.generate_implied_end_tags(exclude: [tag_name])
+						last_opened_tag_name := (p.open_elements[p.open_elements.len - 1] as dom.HTMLElement).tag_name
+						if last_opened_tag_name != tag_name {
+							put(
+								typ:  .warning
+								text: 'Unexpected </${tag_name}>; expecting </${last_opened_tag_name}>'
+							)
+						}
+						// You would think you should pop until `tag_name` is reached like we did above for <dd> and <dt> tags.
+						// But the spec says to do it this way:
+						p.pop_open_elems_until('h1', 'h2', 'h3', 'h4', 'h5', 'h6')
+					}
+					'sarcasm' {
+						println('Take a deep breath and relax for a moment. Look away from your screen for at least 30 seconds before returning.')
 					}
 					else {
 						// todo: this is not spec compliant. It assumes well-formed HTML.
@@ -1655,12 +1782,14 @@ fn (mut p Parser) insert_html_element() &dom.ElementInterface {
 struct InsertElemParams {
 mut:
 	adjust_foreign_attrs bool
+	tag_name             ?string
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#insert-a-foreign-element
 fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI, only_add_to_elem_stack bool, params InsertElemParams) &dom.ElementInterface {
 	mut tag_token := p.current_token as TagToken
-	mut child := dom.HTMLElement.new(p.doc, tag_token.name())
+	name := params.tag_name or { tag_token.name() }
+	mut child := dom.HTMLElement.new(p.doc, name)
 	child.namespace_uri = dom.namespaces[namespace_uri]
 	child.node_type = .element
 	if params.adjust_foreign_attrs {
@@ -1669,6 +1798,7 @@ fn (mut p Parser) insert_foreign_element(namespace_uri dom.NamespaceURI, only_ad
 		// 		child.attributes < dom.Attribute.adjusted_foreign(attribute.name(), attribute.val())
 		// 	}
 		// }
+		println('adjust foreign attributes not implemented')
 	} else {
 		for attribute in tag_token.attributes {
 			child.attributes[attribute.name()] = attribute.value()
@@ -1750,7 +1880,7 @@ fn (mut p Parser) insert_text(text string) {
 @[params]
 pub struct GenerateImpliedTagsParams {
 __global:
-	exclude []string
+	exclude []string // exclude is the list of tags which will not have end tag generated.
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#generate-implied-end-tags
@@ -1927,11 +2057,14 @@ fn (mut p Parser) close_p_element() {
 
 // pop_open_elems_until continues to pop the last element from `p.open_elements`
 // until `tag_name` has been popped or the `p.open_elements` is emptied.
-fn (mut p Parser) pop_open_elems_until(target_tag_name string) {
+fn (mut p Parser) pop_open_elems_until(target_tag_names ...string) {
 	mut popped_tag_name := ''
-	for p.open_elements.len > 0 || popped_tag_name == target_tag_name {
+	for p.open_elements.len > 0 {
 		popped_elem := p.open_elements.pop()
 		popped_tag_name = (popped_elem as dom.HTMLElement).tag_name
+		if popped_tag_name in target_tag_names {
+			break
+		}
 	}
 }
 
@@ -1987,6 +2120,13 @@ fn (mut p Parser) has_element_in_table_scope(target_tag_name string) bool {
 @[inline]
 fn (mut p Parser) has_element_in_select_scope(target_tag_name string) bool {
 	return p.has_element_in_scope_of(target_tag_name, select_scope)
+}
+
+// has_open_element checks if there is an open element on the stack with the same
+// name as the one provided.
+@[inline]
+fn (mut p Parser) has_open_element(target_tag_name string) bool {
+	return p.has_element_in_scope_of(target_tag_name, [])
 }
 
 // generic_raw_text_element_algo

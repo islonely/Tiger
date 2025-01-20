@@ -7,6 +7,7 @@ mut:
 	whole_text string
 }
 
+// Text is characters that appear nested inside an HTML element.
 @[heap]
 pub struct Text {
 	CharacterData
@@ -14,6 +15,8 @@ pub mut:
 	whole_text string
 }
 
+// Text.new creates a Text node with the specified owner document
+// and text data.
 @[inline]
 pub fn Text.new(owner_document &Document, data string) &Text {
 	return &Text{

@@ -3,6 +3,7 @@ module dom
 pub const foreign_attrs = ['xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show',
 	'xlink:title', 'xlink:type', 'xml:lang', 'xml:space', 'xmlns', 'xmlns:xlink']
 
+// Attribute is an HTML tag attribute.
 pub struct Attribute {
 	Node
 	namespace_uri string
