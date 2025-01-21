@@ -19,9 +19,16 @@ pub fn (mut app App) open_url(url string) {
 		return
 	}
 	mut doc := p.parse()
+
+	// pretty print doc view
 	mut tab := Tab.new(mut doc)
 	app.tabbox.add_child(url, tab.view)
 	app.tabbox.active_tab = url
+
+	// rendered web view
+	mut webview := WebView.new(app.win, mut doc)
+	app.tabbox.add_child('${url} - WebView', webview)
+	app.tabbox.active_tab = '${url} - WebView'
 }
 
 // App.new creates a new instance of the App.
@@ -38,6 +45,7 @@ pub fn App.new() &App {
 	app.win.set_theme(ui.theme_ocean())
 
 	app.address_bar = ui.TextField.new()
+	app.address_bar.height = 40
 	mut address_bar_panel := ui.Panel.new(
 		layout: ui.GridLayout.new(
 			cols: 1

@@ -1,6 +1,5 @@
 module dom
 
-import css
 import strings
 
 pub enum DocumentReadyState {
@@ -38,7 +37,6 @@ pub mut:
 	mode         DocumentMode
 	content_type string
 	scripting    bool = true
-	stylesheet   css.Stylesheet
 	// url                    URL
 	// encoding               Encoding
 	// origin                 Origin
@@ -102,6 +100,25 @@ pub fn (mut doc Document) append_child(child &NodeInterface) {
 	unsafe {
 		doc.last_child = child
 	}
+}
+
+// text returns the data from the text nodes within the Document.
+pub fn (doc Document) text() string {
+	mut builder := strings.new_builder(5000)
+	for i, child in doc.child_nodes {
+		text := if child is Text {
+			child.data
+		} else if child is HTMLElement {
+			if child.tag_name in ['style', 'script', 'title'] {
+				continue
+			}
+			doc.child_nodes[i].text()
+		} else {
+			child.text()
+		}
+		builder.write_string(text)
+	}
+	return builder.str().trim_space()
 }
 
 // to_html converts a document's element, comment, and text nodes into HTML.

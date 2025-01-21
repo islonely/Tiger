@@ -120,6 +120,26 @@ pub fn (mut n NodeInterface) append_child(child &NodeInterface) {
 	}
 }
 
+// text returns the data from the text nodes within the Node.
+pub fn (node NodeInterface) text() string {
+	mut builder := strings.new_builder(5000)
+	for i, child in node.child_nodes {
+		text := if child is Text {
+			child.data
+		} else if child is HTMLElement {
+			if child.tag_name in ['style', 'script', 'title'] {
+				continue
+			}
+			node.child_nodes[i].text()
+		} else {
+			child.text()
+		}
+		builder.write_string(text)
+	}
+	return builder.str().trim_space().replace('\n', ' ').replace('\t', ' ').replace('  ',
+		' ')
+}
+
 // recur_pretty_str creates a pretty list of all the descendants of the node.
 fn (n NodeInterface) recur_pretty_str(depth int) string {
 	mut bldr := strings.new_builder(n.child_nodes.len * 50)
