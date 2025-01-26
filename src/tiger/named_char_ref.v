@@ -1,4 +1,4 @@
-module parser
+module tiger
 
 const named_char_ref = {
 	'&AElig':                            rune(0x00c6)

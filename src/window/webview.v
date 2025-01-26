@@ -1,7 +1,7 @@
 module window
 
 import iui as ui
-import parser
+import tiger
 import dom
 
 // WebView is a rendered view of HTML and CSS.
@@ -30,7 +30,7 @@ pub fn WebView.new(parent_window &ui.Window, mut doc dom.Document) &WebView {
 
 // WebView.from_url creates a new WebView instance from the provied URL.
 pub fn WebView.from_url(parent_window &ui.Window, url string) !&WebView {
-	mut p := parser.Parser.from_url(url)!
+	mut p := tiger.Parser.from_url(url)!
 	mut doc := p.parse()
 	return WebView.new(parent_window, mut doc)
 }

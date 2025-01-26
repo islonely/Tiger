@@ -1,6 +1,6 @@
 module window
 
-import parser
+import tiger
 import iui as ui
 
 @[heap; noinit]
@@ -14,7 +14,7 @@ pub mut:
 // open_url parses the source code from the given URL and opens the content
 // in a new tab
 pub fn (mut app App) open_url(url string) {
-	mut p := parser.Parser.from_url(url) or {
+	mut p := tiger.Parser.from_url(url) or {
 		println('Failed to parse URL: ${err.str()}')
 		return
 	}

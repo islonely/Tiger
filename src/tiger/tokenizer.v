@@ -1,4 +1,4 @@
-module parser
+module tiger
 
 import datatypes { Stack }
 import strings { new_builder }

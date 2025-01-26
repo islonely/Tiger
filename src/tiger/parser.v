@@ -1,4 +1,4 @@
-module parser
+module tiger
 
 import dom
 import net.http
